@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 // This file was generated using xtrpc in the server codebase.
 // TODO: automate keeping this in sync
 
