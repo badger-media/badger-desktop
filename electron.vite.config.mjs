@@ -82,6 +82,7 @@ const base = defineConfig({
     ]
   },
   build: {
+    target: "node22",
     minify: prod ? "esbuild" : false,
     rollupOptions: {
       onwarn(warning, warn) {
@@ -167,6 +168,8 @@ const config = {
       build: {
         lib: {
           entry: "./src/common/preload.ts",
+          // ESM is not supported in sandboxed preload scripts
+          formats: ["cjs"],
         },
       },
     }),
