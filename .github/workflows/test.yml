@@ -17,10 +17,11 @@ jobs:
       YARN_ENABLE_HARDENED_MODE: "1"
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
       - run: yarn install --immutable --inline-builds
@@ -31,10 +32,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
       - run: yarn install --immutable --inline-builds
@@ -45,10 +47,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
       - run: yarn install --immutable --inline-builds
@@ -59,10 +62,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
       - run: yarn install --immutable --inline-builds
@@ -73,10 +77,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
       - run: yarn install --immutable --inline-builds
@@ -98,10 +103,11 @@ jobs:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
 
@@ -143,10 +149,11 @@ jobs:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 18.x
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
 
