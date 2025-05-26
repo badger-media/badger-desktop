@@ -15,7 +15,6 @@ import {
 import { IPCEvents } from "./ipcEventBus";
 import { ipcMain } from "electron";
 import logging, { logLevel, setLogLevel } from "./base/logging";
-import { inspect } from "node:util";
 import { ontimeRouter } from "./ontime/ipc";
 import { vmixRouter } from "./vmix/ipc";
 import { obsRouter } from "./obs/ipc";

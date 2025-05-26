@@ -98,7 +98,7 @@ app.use("/:scenario/api/trpc", async (req, res, next) => {
 
 app.use("/testMedia", express.static(path.join(__dirname, "testMedia")));
 
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.setHeader("Content-Type", "text/plain");
   res.send(`This is the Badger Desktop MicroServer.
 Use it for testing or developing Badger Desktop.
