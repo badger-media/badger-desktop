@@ -41,7 +41,7 @@ describe("VMixConnection", () => {
         expect.any(Function),
       );
       sock.emit("data", "FUNCTION OK test\r\n");
-      expect(res).resolves.toEqual(["test", ""]);
+      await expect(res).resolves.toEqual(["test", ""]);
     });
     test("no-arg request", async () => {
       vmix["send"]("XML");
@@ -54,19 +54,19 @@ describe("VMixConnection", () => {
     test("binary response", async () => {
       const res = vmix["send"]("FUNCTION", "test");
       sock.emit("data", "FUNCTION 5\r\nhello");
-      expect(res).resolves.toEqual(["", "hello"]);
+      await expect(res).resolves.toEqual(["", "hello"]);
     });
     test("binary response across multiple chunks", async () => {
       const res = vmix["send"]("FUNCTION", "test");
       sock.emit("data", "FUNCTION 5\r\n");
       sock.emit("data", "hello");
-      expect(res).resolves.toEqual(["", "hello"]);
+      await expect(res).resolves.toEqual(["", "hello"]);
     });
     test("response split across chunks", async () => {
       const res = vmix["send"]("FUNCTION", "test");
       sock.emit("data", "FUNCTION");
       sock.emit("data", " OK\r\n");
-      expect(res).resolves.toEqual(["", ""]);
+      await expect(res).resolves.toEqual(["", ""]);
     });
     test("message and binary", async () => {
       const res = vmix["send"]("FUNCTION", "test");
@@ -75,7 +75,7 @@ describe("VMixConnection", () => {
         "FUNCTION 28 This is a message in addition to the binary data\r\n" +
           "This is optional binary data",
       );
-      expect(res).resolves.toEqual([
+      await expect(res).resolves.toEqual([
         "This is a message in addition to the binary data",
         "This is optional binary data",
       ]);
@@ -95,7 +95,7 @@ describe("VMixConnection", () => {
         expect.any(Function),
       );
       sock.emit("data", "FUNCTION OK test1\r\n");
-      expect(r1).resolves.toEqual(["test1", ""]);
+      await expect(r1).resolves.toEqual(["test1", ""]);
       await nextTick();
       expect(sock.write).toHaveBeenCalledWith(
         "FUNCTION test2\r\n",
@@ -103,7 +103,7 @@ describe("VMixConnection", () => {
         expect.any(Function),
       );
       sock.emit("data", "FUNCTION OK test2\r\n");
-      expect(r2).resolves.toEqual(["test2", ""]);
+      await expect(r2).resolves.toEqual(["test2", ""]);
     });
   });
 
@@ -119,6 +119,6 @@ describe("VMixConnection", () => {
       expect.any(Function),
     );
     sock.emit("data", `XML ${testXML.length}\r\n${testXML}`);
-    expect(res).resolves.toMatchSnapshot();
+    await expect(res).resolves.toMatchSnapshot();
   });
 });
