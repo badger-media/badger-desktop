@@ -1,6 +1,6 @@
 import { proc } from "../../lib";
 import { z } from "zod";
-import { cloneDeep } from "lodash";
+import { cloneDeep } from "lodash-es";
 import type { API as Real } from "../../../../src/types/serverAPI";
 
 import { sampleShow as origSampleShow } from "../default/responses";
