@@ -24,6 +24,7 @@ describe("MockOBSWebSocket", async () => {
     });
     const ws = new WebSocket(`ws://localhost:${ts.port}`, "obswebsocket.json");
     const data: Buffer = await pEvent(ws, "message");
+    console.log(data);
     expect(JSON.parse(data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {

@@ -83,7 +83,7 @@ describe("VMixConnection", () => {
     test("error handling", async () => {
       const res = vmix["send"]("FUNCTION", "test");
       sock.emit("data", "FUNCTION ER test\r\n");
-      expect(res).rejects.toThrow("test");
+      await expect(res).rejects.toThrow("test");
     });
     test("two requests", async () => {
       const r1 = vmix["send"]("FUNCTION", "test1");
