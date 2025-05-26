@@ -5,7 +5,7 @@ import {
   OBSRequestTypes,
   OBSResponseTypes,
 } from "obs-websocket-js";
-import { AddressInfo, WebSocket, WebSocketServer } from "ws";
+import { AddressInfo, MessageEvent, WebSocket, WebSocketServer } from "ws";
 import { pEvent } from "p-event";
 import * as msgpack from "@msgpack/msgpack";
 import type { ExpectStatic as VitestExpect } from "vitest";
@@ -201,12 +201,12 @@ class OBSSocket {
     }
   }
   public async receive() {
-    const data: Buffer = await pEvent(this.ws, "message");
+    const data: MessageEvent = await pEvent(this.ws, "message");
     switch (this.encoding) {
       case "json":
-        return JSON.parse(data.toString("utf-8"));
+        return JSON.parse(data.data.toString("utf-8"));
       case "msgpack":
-        return msgpack.decode(data);
+        return msgpack.decode(data.data as Buffer);
       default:
         throw new Error("unknown encoding " + this.encoding);
     }

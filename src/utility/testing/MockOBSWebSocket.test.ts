@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import MockOBSWebSocket from "./MockOBSWebSocket.js";
-import { WebSocket } from "ws";
+import { WebSocket, MessageEvent } from "ws";
 import { pEvent, pEventIterator } from "p-event";
 import OBSWebSocket, { EventSubscription } from "obs-websocket-js";
 
@@ -23,9 +23,8 @@ describe("MockOBSWebSocket", async () => {
       });
     });
     const ws = new WebSocket(`ws://localhost:${ts.port}`, "obswebsocket.json");
-    const data: Buffer = await pEvent(ws, "message");
-    console.log(data);
-    expect(JSON.parse(data.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "obsWebSocketVersion": "5.1.0",
@@ -42,8 +41,8 @@ describe("MockOBSWebSocket", async () => {
         },
       }),
     );
-    const data2: Buffer = await pEvent(ws, "message");
-    expect(JSON.parse(data2.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data2: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data2.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "negotiatedRpcVersion": 1,
@@ -60,8 +59,8 @@ describe("MockOBSWebSocket", async () => {
         },
       }),
     );
-    const data3: Buffer = await pEvent(ws, "message");
-    expect(JSON.parse(data3.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data3: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data3.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "requestId": "asdf",
@@ -89,8 +88,8 @@ describe("MockOBSWebSocket", async () => {
   it("works without an actor", async () => {
     const ts = await MockOBSWebSocket.create(expect);
     const ws = new WebSocket(`ws://localhost:${ts.port}`, "obswebsocket.json");
-    const data: Buffer = await pEvent(ws, "message");
-    expect(JSON.parse(data.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "obsWebSocketVersion": "5.1.0",
@@ -107,8 +106,8 @@ describe("MockOBSWebSocket", async () => {
         },
       }),
     );
-    const data2: Buffer = await pEvent(ws, "message");
-    expect(JSON.parse(data2.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data2: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data2.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "negotiatedRpcVersion": 1,
@@ -142,8 +141,8 @@ describe("MockOBSWebSocket", async () => {
         supportedImageFormats: [],
       },
     });
-    const data3: Buffer = await pEvent(ws, "message");
-    expect(JSON.parse(data3.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data3: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data3.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "requestId": "asdf",
@@ -176,8 +175,8 @@ describe("MockOBSWebSocket", async () => {
       });
     });
     const ws = new WebSocket(`ws://localhost:${ts.port}`, "obswebsocket.json");
-    const data: Buffer = await pEvent(ws, "message");
-    expect(JSON.parse(data.toString("utf-8"))).toMatchInlineSnapshot(`
+    const data: MessageEvent = await pEvent(ws, "message");
+    expect(JSON.parse(data.data.toString("utf-8"))).toMatchInlineSnapshot(`
       {
         "d": {
           "obsWebSocketVersion": "5.1.0",
@@ -197,7 +196,7 @@ describe("MockOBSWebSocket", async () => {
     );
     const messages = [];
     for await (const evt of pEventIterator(ws, "message")) {
-      messages.push(JSON.parse(evt.toString("utf-8")));
+      messages.push(JSON.parse(evt.data.toString("utf-8")));
       if (messages.length === 2) {
         break;
       }
