@@ -48,7 +48,6 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: "yarn microserver",
-    cwd: "../server",
     url: "http://127.0.0.1:8594",
     reuseExistingServer: !process.env.CI,
   },
