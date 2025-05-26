@@ -8,9 +8,7 @@ import {
   CompleteShowModel,
   PartialShowModel,
 } from "@/types/serverAPILenses";
-
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const packageJSON = require("../../../../package.json");
+import * as packageJSON from "../../../../package.json" with { type: "json" };
 
 export const sampleRundown: CompleteRundownType = {
   id: 1,

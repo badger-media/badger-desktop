@@ -30,13 +30,14 @@ import * as path from "node:path";
 import { MICRO_SERVER_AUTH_SHARED_SECRET, MICRO_SERVER_PORT, t } from "./lib";
 import { readdirSync } from "node:fs";
 import defaultResponses from "./scenarios/default/responses";
-import { get, set } from "lodash";
-import { json } from "body-parser";
+import { get, set } from "lodash-es";
+import bodyParser from "body-parser";
 import rewrite from "express-urlrewrite";
+import { createServer } from "node:http";
 
 const app = express();
 
-app.use(json());
+app.use(bodyParser.json());
 
 app.use(rewrite("/api/trpc/*", "/default/api/trpc/$1"));
 
@@ -56,12 +57,12 @@ function routerize(obj: Record<string, any>) {
 }
 
 const scenarioRouters: Record<string, ReturnType<(typeof t)["router"]>> = {};
-for (const scenario of readdirSync(path.join(__dirname, "scenarios"))) {
+for (const scenario of readdirSync(path.join(import.meta.dirname, "scenarios"))) {
   console.log(`Building router for ${scenario}`);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const scenarioResponses = require(
+  const scenarioResponses = (await import(
     `./scenarios/${scenario}/responses`,
-  ).default;
+  )).default;
   const responses = {};
   for (const endpoint of Object.keys(scenarioResponses)) {
     set(responses, endpoint, scenarioResponses[endpoint]);
@@ -96,7 +97,7 @@ app.use("/:scenario/api/trpc", async (req, res, next) => {
   })(req, res, next);
 });
 
-app.use("/testMedia", express.static(path.join(__dirname, "testMedia")));
+app.use("/testMedia", express.static(path.join(import.meta.dirname, "testMedia")));
 
 app.get("/", (_, res) => {
   res.setHeader("Content-Type", "text/plain");
@@ -110,7 +111,7 @@ Configure your Badger Desktop with the following details:
 There is nothing more to see here.`);
 });
 
-app.listen(MICRO_SERVER_PORT, () => {
+createServer(app).listen(MICRO_SERVER_PORT, () => {
   console.log("MicroServer running.");
   console.log("Configure your Badger Desktop with the following details:");
   console.log(
