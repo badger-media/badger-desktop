@@ -4,7 +4,10 @@ import { cloneDeep } from "lodash";
 import type { API as Real } from "../../../../src/types/serverAPI";
 
 import { sampleShow as origSampleShow } from "../default/responses";
-import { CompleteRundownType, CompleteShowModel } from "@/types/serverAPILenses";
+import {
+  CompleteRundownType,
+  CompleteShowModel,
+} from "@/types/serverAPILenses";
 
 const sampleShow = cloneDeep(origSampleShow);
 const N_RUNDOWN_ITEMS = 50;
