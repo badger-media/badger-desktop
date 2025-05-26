@@ -1,9 +1,9 @@
 import { ReactNode, useCallback, useEffect, useState } from "react";
 import { ipc } from "./ipc";
-import Button from "@badger/components/button";
+import Button from "@/renderer/components/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
-import invariant from "../common/invariant";
+import invariant from "@/common/invariant";
 
 function ServerConnectForm() {
   const queryClient = useQueryClient();

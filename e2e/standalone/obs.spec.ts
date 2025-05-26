@@ -1,4 +1,4 @@
-import MockOBSWebSocket from "@badger/testing/MockOBSWebSocket";
+import MockOBSWebSocket from "@/utility/testing/MockOBSWebSocket";
 import { test, expect } from "./base";
 
 test("download continuity media and load into OBS", async ({

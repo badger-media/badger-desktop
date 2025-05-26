@@ -1,11 +1,11 @@
 import { ipc } from "../ipc";
 import { useQueryClient } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
-import { Label } from "@badger/components/label";
-import { Input } from "@badger/components/input";
-import { Button } from "@badger/components/button";
-import { Alert } from "@badger/components/alert";
-import { RadioGroup, RadioGroupItem } from "@badger/components/radio-group";
+import { Label } from "@/renderer/components/label";
+import { Input } from "@/renderer/components/input";
+import { Button } from "@/renderer/components/button";
+import { Alert } from "@/renderer/components/alert";
+import { RadioGroup, RadioGroupItem } from "@/renderer/components/radio-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,9 +13,9 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
-} from "@badger/components/alert-dialog";
-import { Dialog, DialogContent, DialogHeader } from "@badger/components/dialog";
-import { CompleteShowType } from "../../common/types";
+} from "@/renderer/components/alert-dialog";
+import { Dialog, DialogContent, DialogHeader } from "@/renderer/components/dialog";
+import { CompleteShowModel } from "@/types/serverAPILenses";
 
 export function OntimeSettings() {
   const queryClient = useQueryClient();
@@ -70,8 +70,8 @@ export function OntimeSettings() {
 
 export function OntimePush(props: {
   show: {
-    rundowns: CompleteShowType["rundowns"];
-    continuityItems: CompleteShowType["continuityItems"];
+    rundowns: CompleteShowModel["rundowns"];
+    continuityItems: CompleteShowModel["continuityItems"];
   };
   dialogOpen: boolean;
   setDialogOpen: (v: boolean) => unknown;

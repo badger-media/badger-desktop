@@ -5,18 +5,18 @@ import {
   httpLink,
   loggerLink,
 } from "@trpc/client";
-import type { AppRouter } from "badger-server/app/api/_router";
+import type { API } from "@/types/serverAPI";
 import superjson from "superjson";
 import { getServerSettings, saveServerSettings } from "./settings";
 import logging from "./logging";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 
 const logger = logging.getLogger("serverApiClient");
 
-export let serverApiClient: CreateTRPCProxyClient<AppRouter> | null = null;
+export let serverApiClient: CreateTRPCProxyClient<API> | null = null;
 
 async function newAPIClient(endpoint: string, password: string) {
-  const client = createTRPCProxyClient<AppRouter>({
+  const client = createTRPCProxyClient<API>({
     links: [
       loggerLink({
         logger(opts) {

@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { mergeConfig, defineConfig } from "vite";
 import { visualizer } from "rollup-plugin-visualizer";
+import { fileURLToPath } from "node:url";
 import ignore from "rollup-plugin-ignore";
 
 const packageJSON = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
@@ -21,8 +22,8 @@ const visualizeBundle = process.argv.includes("--visualize-bundle");
  * Explanation of this gross hack:
  * We cannot allow the Prisma runtime to get bundled into the desktop build, else it will fail
  * to start. We do, however, need the TypeScript types of the Prisma models. This is normally
- * not a problem because of zod-prisma-types, which generates @badger/prisma/types, which we
- * can import (and forbid importing @badger/prisma/client).
+ * not a problem because of zod-prisma-types, which generates @/server/utility/prisma/types, which we
+ * can import (and forbid importing @/server/utility/prisma/client).
  * However, zod-prisma-types still needs to import the actual Prisma client in one place,
  * transformJsonNull.ts, so that it can access Prisma.JsonNull/Prisma.DbNull.
  *
@@ -72,6 +73,14 @@ const base = defineConfig({
       disable: process.env.IS_YSTV_BUILD !== "true",
     }),
   ],
+  resolve: {
+    alias: [
+      {
+        find: '@',
+        replacement: fileURLToPath(new URL('./src', import.meta.url))
+      },
+    ]
+  },
   build: {
     minify: prod ? "esbuild" : false,
     rollupOptions: {

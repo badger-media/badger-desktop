@@ -2,10 +2,10 @@ import * as wget from "wget-improved";
 import { spawn } from "child_process";
 import * as fs from "fs/promises";
 import which from "which";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import logging from "../base/logging";
 import { getDownloadsSettings } from "../base/settings";
-import { throttle } from "lodash";
+import { throttle } from "lodash-es";
 
 const logger = logging.getLogger("downloadFile");
 

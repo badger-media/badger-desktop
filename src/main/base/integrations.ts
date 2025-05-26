@@ -1,4 +1,4 @@
-import { Integration } from "../../common/types";
+import { Integration } from "@/common/types";
 
 export let supportedIntegrations: Integration[];
 // This is fairly rudimentary

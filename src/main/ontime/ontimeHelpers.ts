@@ -1,11 +1,11 @@
-import { CompleteShowType } from "../../common/types";
 import { OntimeBaseEvent, OntimeEvent, OntimeFullEvent } from "./ontime";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { set } from "lodash/fp";
 import type {
   CompleteRundownType,
   CompleteContinuityItemModel,
-} from "@badger/prisma/utilityTypes";
+  CompleteShowModel,
+} from "@/types/serverAPILenses";
 
 function dateToTimeMs(date: Date) {
   return (
@@ -18,7 +18,7 @@ function dateToTimeMs(date: Date) {
 const vtColour = "#3E75E8";
 const continuityColour = "#FF7878";
 
-export function showToOntimeEvents(show: CompleteShowType, rundownId?: number) {
+export function showToOntimeEvents(show: CompleteShowModel, rundownId?: number) {
   const events: Omit<OntimeFullEvent, "id" | "revision">[] = [];
   let startTime = show.start;
   if (rundownId) {

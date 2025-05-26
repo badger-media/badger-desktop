@@ -11,7 +11,7 @@ import {
   isOntimeConnected,
 } from "./ontime";
 import { selectedShow } from "../base/selectedShow";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { showToOntimeEvents } from "./ontimeHelpers";
 import { getLogger } from "../base/logging";
 

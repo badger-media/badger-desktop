@@ -1,4 +1,4 @@
-import { Events } from "../common/ipcEvents";
+import { Events } from "@/common/ipcEvents";
 
 interface EventBusType {
   on<K extends keyof Events>(

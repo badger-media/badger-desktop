@@ -6,8 +6,7 @@ import {
 import { z } from "zod";
 import { callProcedure, TRPCError } from "@trpc/server";
 import { selectedShow, setSelectedShow } from "./base/selectedShow";
-import { CompleteShowModel } from "@badger/prisma/utilityTypes";
-import { Integration } from "../common/types";
+import { Integration } from "@/common/types";
 import {
   devToolsConfigSchema,
   getDevToolsConfig,
@@ -16,7 +15,6 @@ import {
 import { IPCEvents } from "./ipcEventBus";
 import { ipcMain } from "electron";
 import logging, { logLevel, setLogLevel } from "./base/logging";
-import { ShowSchema } from "@badger/prisma/types";
 import { inspect } from "node:util";
 import { ontimeRouter } from "./ontime/ipc";
 import { vmixRouter } from "./vmix/ipc";
@@ -27,6 +25,7 @@ import {
   DEV_overrideSupportedIntegrations,
   supportedIntegrations,
 } from "./base/integrations";
+import { CompleteShowModel, PartialShowModel } from "@/types/serverAPILenses";
 
 const logger = logging.getLogger("ipcApi");
 const rendererLogger = logging.getLogger("renderer");
@@ -77,20 +76,17 @@ export const appRouter = r({
       await createAPIClient(input.endpoint + "/api/trpc", input.password);
       return true;
     }),
-  listUpcomingShows: proc.output(z.array(ShowSchema)).query(async () => {
+  listUpcomingShows: proc.output(z.custom<PartialShowModel[]>()).query(async () => {
     return await serverAPI().shows.listUpcoming.query({
       gracePeriodHours: 24,
     });
   }),
-  getSelectedShow: proc.output(CompleteShowModel.nullable()).query(() => {
-    logger.trace(
-      `getSelectedShow called, current value is ${inspect(selectedShow.value)}`,
-    );
-    return selectedShow.value;
+  getSelectedShow: proc.output(z.custom<CompleteShowModel|null>()).query(() => {
+    return selectedShow.value ?? null;
   }),
   setSelectedShow: proc
     .input(z.object({ id: z.number() }))
-    .output(CompleteShowModel)
+    .output(z.custom<CompleteShowModel>())
     .mutation(async ({ input }) => {
       const data = await serverAPI().shows.get.query({ id: input.id });
       await setSelectedShow(data);

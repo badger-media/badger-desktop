@@ -1,31 +1,29 @@
 import { ipc, useInvalidateQueryOnIPCEvent } from "../ipc";
 import { useForm } from "react-hook-form";
-import { Button } from "@badger/components/button";
+import { Button } from "@/renderer/components/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert } from "@badger/components/alert";
-import { Progress } from "@badger/components/progress";
-import { Badge } from "@badger/components/badge";
+import { Alert } from "@/renderer/components/alert";
+import { Progress } from "@/renderer/components/progress";
+import { Badge } from "@/renderer/components/badge";
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogFooter,
-} from "@badger/components/alert-dialog";
+} from "@/renderer/components/alert-dialog";
 import {
   Table,
   TableBody,
   TableRow,
   TableCell,
-} from "@badger/components/table";
-
-import { CompleteContinuityItemModel } from "@badger/prisma/utilityTypes";
-import { z } from "zod";
-import invariant from "../../common/invariant";
-import { Label } from "@badger/components/label";
-import { Input } from "@badger/components/input";
+} from "@/renderer/components/table";
+import invariant from "@/common/invariant";
+import { Label } from "@/renderer/components/label";
+import { Input } from "@/renderer/components/input";
+import { CompleteContinuityItemModel } from "@/types/serverAPILenses";
 
 export function OBSSettings() {
   const queryClient = useQueryClient();
@@ -109,7 +107,7 @@ export function OBSSettings() {
 function AddToOBS({
   item,
 }: {
-  item: z.infer<typeof CompleteContinuityItemModel>;
+  item: CompleteContinuityItemModel;
 }) {
   const queryClient = useQueryClient();
   const addToOBS = ipc.obs.addMediaAsScene.useMutation();
@@ -357,7 +355,7 @@ function AddToOBS({
 function ContinuityItem({
   item,
 }: {
-  item: z.infer<typeof CompleteContinuityItemModel>;
+  item: CompleteContinuityItemModel;
 }) {
   return (
     <TableRow>

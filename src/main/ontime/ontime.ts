@@ -1,5 +1,5 @@
 import got, { type Got } from "got";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { getOntimeSettings } from "../base/settings";
 import { getLogger } from "../base/logging";
 
@@ -63,8 +63,7 @@ export class OntimeClient {
       throw new Error(
         `Could not connect to Ontime at ${host}: ${
           e instanceof Error ? e.message : String(e)
-        }`,
-        { cause: e },
+        }`
       );
     }
     if (typeof info.version === "number") {

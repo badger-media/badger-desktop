@@ -4,7 +4,7 @@ import { createOBSConnection, obsConnection } from "./obs";
 import { addOrReplaceMediaAsScene, findContinuityScenes } from "./obsHelpers";
 import { getLogger } from "loglevel";
 import { serverAPI } from "../base/serverApiClient";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { selectedShow } from "../base/selectedShow";
 import { getDevToolsConfig } from "../base/settings";
 import { TRPCError } from "@trpc/server";

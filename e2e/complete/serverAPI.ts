@@ -1,5 +1,5 @@
 import { fetch } from "undici";
-import type { AppRouter } from "badger-server/app/api/_router";
+import type { API } from "@/types/serverAPI";
 import { createTRPCProxyClient, httpBatchLink } from "@trpc/client";
 import SuperJSON from "superjson";
 import { expect } from "@playwright/test";
@@ -12,7 +12,7 @@ import dotenvFlow from "dotenv-flow";
 import path from "path";
 import { existsSync } from "fs";
 
-export const server = createTRPCProxyClient<AppRouter>({
+export const server = createTRPCProxyClient<API>({
   links: [
     httpBatchLink({
       url: "http://localhost:3000/api/trpc",
@@ -138,7 +138,7 @@ export async function directlyCreateTestMedia(
 export function loadServerEnvVars() {
   const { parsed: env, error } = dotenvFlow.load(
     dotenvFlow
-      .listFiles(path.resolve(__dirname + "../../../../server"))
+      .listFiles({ path: path.resolve(__dirname + "../../../../server") })
       .filter((x) => existsSync(x)),
   );
   if (!env) {

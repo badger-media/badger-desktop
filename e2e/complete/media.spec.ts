@@ -2,10 +2,10 @@ import { ElectronApplication, Page, expect } from "@playwright/test";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import { createAndUploadTestMedia, server } from "./serverAPI";
-import { CompleteShowType } from "../../src/common/types";
 import { test } from "./desktopE2EUtils";
+import { CompleteShowModel } from "@/types/serverAPILenses";
 
-let testShow: CompleteShowType;
+let testShow: CompleteShowModel;
 
 test.beforeEach(async ({ request, app: [_, page] }) => {
   await request.post(

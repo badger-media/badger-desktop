@@ -1,27 +1,21 @@
 import { ipc, useInvalidateQueryOnIPCEvent } from "../ipc";
-import { Button } from "@badger/components/button";
+import { Button } from "@/renderer/components/button";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getQueryKey } from "@trpc/react-query";
-import {
-  CompleteAssetSchema,
-  CompleteRundownItemSchema,
-  CompleteRundownModel,
-} from "@badger/prisma/utilityTypes";
-import { z } from "zod";
 import { ListInput } from "../../main/vmix/vmixTypes";
-import invariant from "../../common/invariant";
-import { Alert } from "@badger/components/alert";
-import { Progress } from "@badger/components/progress";
+import invariant from "@/common/invariant";
+import { Alert } from "@/renderer/components/alert";
+import { Progress } from "@/renderer/components/progress";
 import {
   Table,
   TableBody,
   TableCell,
   TableRow,
-} from "@badger/components/table";
-import { Badge } from "@badger/components/badge";
-import { Label } from "@badger/components/label";
-import { Input } from "@badger/components/input";
+} from "@/renderer/components/table";
+import { Badge } from "@/renderer/components/badge";
+import { Label } from "@/renderer/components/label";
+import { Input } from "@/renderer/components/input";
 import {
   IoCheckmarkDone,
   IoChevronDown,
@@ -29,14 +23,13 @@ import {
   IoDownload,
   IoPush,
 } from "react-icons/io5";
-import type { Rundown, RundownItem } from "@badger/prisma/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@badger/components/dropdown-menu";
+} from "@/renderer/components/dropdown-menu";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
-import { VMIX_NAMES } from "../../common/constants";
+import { VMIX_NAMES } from "@/common/constants";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,7 +39,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@badger/components/alert-dialog";
+} from "@/renderer/components/alert-dialog";
+import { CompleteAssetModel, CompleteRundownType, RundownItem } from "@/types/serverAPILenses";
 
 export function VMixConnection() {
   const [state] = ipc.vmix.getConnectionState.useSuspenseQuery();
@@ -113,7 +107,7 @@ type ItemState =
   | "ready"
   | "loaded";
 
-function RundownVTs(props: { rundown: z.infer<typeof CompleteRundownModel> }) {
+function RundownVTs(props: { rundown: CompleteRundownType }) {
   const queryClient = useQueryClient();
   const vmixState = ipc.vmix.getCompleteState.useQuery();
   const downloadState = ipc.media.getDownloadStatus.useQuery(undefined, {
@@ -155,7 +149,7 @@ function RundownVTs(props: { rundown: z.infer<typeof CompleteRundownModel> }) {
     );
   }, [vmixState.data]);
   const items: Array<
-    z.infer<typeof CompleteRundownItemSchema> & {
+    RundownItem & {
       _state: ItemState;
       _downloadProgress?: number;
     }
@@ -413,8 +407,6 @@ function RundownVTs(props: { rundown: z.infer<typeof CompleteRundownModel> }) {
   );
 }
 
-type Asset = z.infer<typeof CompleteAssetSchema>;
-
 interface AssetState {
   state:
     | "no-media"
@@ -431,9 +423,9 @@ function SingleAsset({
   state,
   rundown,
 }: {
-  asset: Asset;
+  asset: CompleteAssetModel;
   state: AssetState;
-  rundown: Rundown;
+  rundown: CompleteRundownType;
 }) {
   const queryClient = useQueryClient();
   const doDownload = ipc.media.downloadMedia.useMutation({
@@ -511,8 +503,8 @@ function SingleAsset({
 
 function AssetCategory(props: {
   category: string;
-  assets: Asset[];
-  rundown: Rundown;
+  assets: CompleteAssetModel[];
+  rundown: CompleteRundownType;
 }) {
   const [isExpanded, setExpanded] = useState(false);
 
@@ -550,7 +542,7 @@ function AssetCategory(props: {
     },
   });
 
-  function getAssetState(asset: Asset): AssetState {
+  function getAssetState(asset: CompleteAssetModel): AssetState {
     if (!asset.media) {
       return { state: "no-media" };
     }
@@ -699,9 +691,9 @@ function AssetCategory(props: {
 }
 
 function RundownAssets(props: {
-  rundown: z.infer<typeof CompleteRundownModel>;
+  rundown: CompleteRundownType;
 }) {
-  const assets: Map<string, Asset[]> = useMemo(() => {
+  const assets: Map<string, CompleteAssetModel[]> = useMemo(() => {
     const byCategory = new Map();
     for (const asset of props.rundown.assets) {
       if (!byCategory.has(asset.category)) {
@@ -727,7 +719,7 @@ function RundownAssets(props: {
   );
 }
 
-function Rundown(props: { rundown: z.infer<typeof CompleteRundownModel> }) {
+function Rundown(props: { rundown: CompleteRundownType }) {
   const queryClient = useQueryClient();
   const { data: downloadStatus } = ipc.media.getDownloadStatus.useQuery(
     undefined,
@@ -754,7 +746,7 @@ function Rundown(props: { rundown: z.infer<typeof CompleteRundownModel> }) {
 }
 
 export default function VMixScreen(props: {
-  rundown: z.infer<typeof CompleteRundownModel>;
+  rundown: CompleteRundownType;
 }) {
   const connectionState = ipc.vmix.getConnectionState.useQuery();
 

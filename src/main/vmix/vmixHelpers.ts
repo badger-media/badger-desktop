@@ -1,9 +1,9 @@
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { getLogger } from "../base/logging";
 import { getLocalMedia } from "../media/mediaManagement";
 import { getVMixConnection } from "./vmix";
 import { InputType, ListInput, ListItem } from "./vmixTypes";
-import type { Asset, Media } from "@badger/prisma/types";
+import { CompleteAssetModel } from "@/types/serverAPILenses";
 
 const logger = getLogger("vmixHelpers");
 
@@ -73,7 +73,7 @@ export async function isListPlaying(listName: string): Promise<boolean> {
 }
 
 export function getInputTypeForAsset(
-  asset: Asset & { media: Media | null },
+  asset: CompleteAssetModel,
 ): InputType {
   const extension = asset.media!.name.split(".").pop();
   switch (extension) {
@@ -104,7 +104,7 @@ export function getInputTypeForAsset(
 }
 
 export async function loadAssets(
-  assets: (Asset & { media: Media | null })[],
+  assets: CompleteAssetModel[],
   loadType: "direct" | "list",
   category: string,
 ) {

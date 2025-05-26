@@ -1,6 +1,8 @@
-import { beforeAll, expect, test } from "vitest";
+import { beforeAll, expect, test, describe as realDescribe } from "vitest";
 import VMixConnection from "./vmix";
-import { integrate } from "@badger/testing";
+
+const integrate =
+  process.env.TEST_INTEGRATION === "true" ? realDescribe : realDescribe.skip;
 
 integrate("VMixConnection integration", () => {
   let vmix: VMixConnection;

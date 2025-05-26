@@ -2,7 +2,7 @@ import { CreateTRPCClientOptions, createTRPCProxyClient } from "@trpc/client";
 import { ipcLink } from "electron-trpc/renderer";
 import { createTRPCReact } from "@trpc/react-query";
 import type { AppRouter } from "../main/ipcApi";
-import { Events } from "../common/ipcEvents";
+import { Events } from "@/common/ipcEvents";
 import { QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import logging from "loglevel";

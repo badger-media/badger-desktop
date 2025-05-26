@@ -4,11 +4,11 @@ import {
   OBSVideoSettings,
   SceneItem,
 } from "./obs";
-import invariant from "../../common/invariant";
-import type { Media, ContinuityItem } from "@badger/prisma/types";
+import invariant from "@/common/invariant";
 import { getLogger } from "../base/logging";
 import { selectedShow } from "../base/selectedShow";
 import { getLocalMedia } from "../media/mediaManagement";
+import { PartialContinuityItemModel, PartialMediaModel } from "@/types/serverAPILenses";
 
 const logger = getLogger("obsHelpers");
 
@@ -16,8 +16,8 @@ const logger = getLogger("obsHelpers");
  * This file contains helper functions that wrap obsConnection in obs.ts.
  */
 
-export type MediaType = Media & {
-  continuityItems: ContinuityItem[];
+export type MediaType = PartialMediaModel & {
+  continuityItems: PartialContinuityItemModel[];
 };
 
 const MEDIA_SOURCE_PREFIX = "Badger Media ";

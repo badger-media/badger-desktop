@@ -34,24 +34,11 @@ module.exports = {
             allowTypeImports: true,
           },
           {
-            group: [`badger-server/lib/db`],
-            message: "You probably wanted '@badger/prisma'.",
-          },
-          {
-            group: ["@"],
-            message:
-              "Next's @-prefixed imports won't work. Import from badger-server instead.",
-          },
-          {
             group: ["^electron"],
             importNames: ["safeStorage"],
             message:
               "Use main/safeStorage.ts instead to avoid E2E test failures.",
           },
-          {
-            group: [`@badger/prisma/client`],
-            message: "Use @badger/prisma/types instead"
-          }
         ],
       },
     ],

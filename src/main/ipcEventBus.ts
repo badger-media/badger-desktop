@@ -1,4 +1,4 @@
-import { Events } from "../common/ipcEvents";
+import { Events } from "@/common/ipcEvents";
 import { Subscribable } from "rxjs";
 import { getLogger } from "./base/logging";
 

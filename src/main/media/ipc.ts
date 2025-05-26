@@ -15,7 +15,7 @@ import { selectedShow } from "../base/selectedShow";
 import { serverAPI } from "../base/serverApiClient";
 import { getLogger } from "../base/logging";
 import { isAfter } from "date-fns";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { getAvailableDownloaders } from "./downloadFile";
 import { getVMixConnection } from "../vmix/vmix";
 import { obsConnection } from "../obs/obs";

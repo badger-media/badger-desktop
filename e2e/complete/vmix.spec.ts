@@ -6,11 +6,11 @@ import {
   loadServerEnvVars,
   server,
 } from "./serverAPI";
-import type { CompleteShowType } from "../../src/common/types";
 import type VMixConnection from "../../src/main/vmix/vmix";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { CompleteShowModel } from "@/types/serverAPILenses";
 
-let testShow: CompleteShowType;
+let testShow: CompleteShowModel;
 
 test.beforeEach(async ({ request }) => {
   await request.post(

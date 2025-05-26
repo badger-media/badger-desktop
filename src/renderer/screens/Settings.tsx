@@ -3,17 +3,17 @@ import { ipc } from "../ipc";
 import { getQueryKey } from "@trpc/react-query";
 import { OBSSettings } from "./OBS";
 import OBSDevToolsScreen from "./OBSDevTools";
-import { Switch } from "@badger/components/switch";
-import { Label } from "@badger/components/label";
+import { Switch } from "@/renderer/components/switch";
+import { Label } from "@/renderer/components/label";
 import {
   Tabs,
   TabsList,
   TabsTrigger,
   TabsContent,
-} from "@badger/components/tabs";
+} from "@/renderer/components/tabs";
 import { VMixConnection } from "./vMix";
 import { OntimeSettings } from "./Ontime";
-import Button from "@badger/components/button";
+import Button from "@/renderer/components/button";
 import { MediaSettings } from "./MediaSettings";
 import {
   Select,
@@ -21,7 +21,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@badger/components/select";
+} from "@/renderer/components/select";
 import { LogLevelNames } from "loglevel";
 
 export function Settings() {

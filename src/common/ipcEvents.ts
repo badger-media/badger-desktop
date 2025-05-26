@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { CompleteShowType } from "./types";
+
+import { CompleteShowModel } from "@/types/serverAPILenses";
 
 /*
  * This file defines the events that can be sent from the main process to the renderer process.
@@ -8,7 +9,7 @@ import { CompleteShowType } from "./types";
  */
 
 export const Events = {
-  selectedShowChange(_newShow: CompleteShowType | null) {},
+  selectedShowChange(_newShow: CompleteShowModel | null) {},
   assetsSettingsChange() {},
   devToolsSettingsChange() {},
   downloadStatusChange() {},

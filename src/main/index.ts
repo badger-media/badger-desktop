@@ -12,7 +12,6 @@ import { tryCreateVMixConnection } from "./vmix/vmix";
 import Icon from "../icon/png/64x64.png";
 import { tryCreateOntimeConnection } from "./ontime/ontime";
 import * as Sentry from "@sentry/electron/main";
-import { logFlagState } from "@badger/feature-flags";
 import { getLogger } from "./base/logging";
 import { scanLocalMedia } from "./media/mediaManagement";
 
@@ -33,7 +32,6 @@ console.error = logger.error;
 logger.info(
   `Badger Desktop v${global.__APP_VERSION__} ${global.__ENVIRONMENT__} (${global.__GIT_COMMIT__}) starting up.`,
 );
-logFlagState(true);
 
 if (import.meta.env.VITE_DESKTOP_SENTRY_DSN) {
   try {

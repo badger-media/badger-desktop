@@ -1,11 +1,11 @@
-import { CompleteShowType } from "../../common/types";
 import { serverApiClient } from "./serverApiClient";
 import { BehaviorSubject } from "rxjs";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
+import { CompleteShowModel } from "@/types/serverAPILenses";
 
-export const selectedShow = new BehaviorSubject<CompleteShowType | null>(null);
+export const selectedShow = new BehaviorSubject<CompleteShowModel | null>(null);
 
-export async function setSelectedShow(show: CompleteShowType) {
+export async function setSelectedShow(show: CompleteShowModel) {
   selectedShow.next(show);
   if (timer === null) {
     checkForChangesLoop();

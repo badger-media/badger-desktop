@@ -1,23 +1,23 @@
 import { ipc, useInvalidateQueryOnIPCEvent } from "./ipc";
-import invariant from "../common/invariant";
+import invariant from "@/common/invariant";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTrigger,
-} from "@badger/components/dialog";
+} from "@/renderer/components/dialog";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@badger/components/popover";
+} from "@/renderer/components/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@badger/components/dropdown-menu";
-import { Button } from "@badger/components/button";
+} from "@/renderer/components/dropdown-menu";
+import { Button } from "@/renderer/components/button";
 import {
   IoAlertSharp,
   IoCaretDownOutline,
@@ -35,7 +35,7 @@ import {
   TableBody,
   TableCell,
   TableRow,
-} from "@badger/components/table";
+} from "@/renderer/components/table";
 import { OntimePush } from "./screens/Ontime";
 import { getQueryKey } from "@trpc/react-query";
 

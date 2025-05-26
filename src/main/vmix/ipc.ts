@@ -2,9 +2,8 @@ import { z } from "zod";
 import { proc, r } from "../base/ipcRouter";
 import { createVMixConnection, getVMixConnection } from "./vmix";
 import { getLogger } from "../base/logging";
-import invariant from "../../common/invariant";
+import invariant from "@/common/invariant";
 import { serverAPI } from "../base/serverApiClient";
-import { PartialMediaModel } from "@badger/prisma/utilityTypes";
 import { TRPCError } from "@trpc/server";
 import {
   addSingleItemToList,
@@ -12,7 +11,7 @@ import {
   loadAssets,
   reconcileList,
 } from "./vmixHelpers";
-import { VMIX_NAMES } from "../../common/constants";
+import { VMIX_NAMES } from "@/common/constants";
 import { getLocalMedia } from "../media/mediaManagement";
 
 const logger = getLogger("vmix/ipc");
@@ -96,7 +95,7 @@ export const vmixRouter = r({
       invariant(rundown, "Rundown not found");
       const media = rundown.items
         .sort((a, b) => a.order - b.order)
-        .map<z.infer<typeof PartialMediaModel> | null>((i) => i.media)
+        .map((i) => i.media)
         .filter((x) => x && x.state === "Ready");
       const localMedia = getLocalMedia();
       const paths = media.map(
