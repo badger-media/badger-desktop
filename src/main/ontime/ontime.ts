@@ -63,7 +63,7 @@ export class OntimeClient {
       throw new Error(
         `Could not connect to Ontime at ${host}: ${
           e instanceof Error ? e.message : String(e)
-        }`
+        }`,
       );
     }
     if (typeof info.version === "number") {

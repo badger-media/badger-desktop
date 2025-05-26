@@ -76,14 +76,18 @@ export const appRouter = r({
       await createAPIClient(input.endpoint + "/api/trpc", input.password);
       return true;
     }),
-  listUpcomingShows: proc.output(z.custom<PartialShowModel[]>()).query(async () => {
-    return await serverAPI().shows.listUpcoming.query({
-      gracePeriodHours: 24,
-    });
-  }),
-  getSelectedShow: proc.output(z.custom<CompleteShowModel|null>()).query(() => {
-    return selectedShow.value ?? null;
-  }),
+  listUpcomingShows: proc
+    .output(z.custom<PartialShowModel[]>())
+    .query(async () => {
+      return await serverAPI().shows.listUpcoming.query({
+        gracePeriodHours: 24,
+      });
+    }),
+  getSelectedShow: proc
+    .output(z.custom<CompleteShowModel | null>())
+    .query(() => {
+      return selectedShow.value ?? null;
+    }),
   setSelectedShow: proc
     .input(z.object({ id: z.number() }))
     .output(z.custom<CompleteShowModel>())

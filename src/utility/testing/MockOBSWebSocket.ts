@@ -5,7 +5,7 @@ import {
   OBSResponseTypes,
 } from "obs-websocket-js";
 import { AddressInfo, WebSocket, WebSocketServer } from "ws";
-import {pEvent} from "p-event";
+import { pEvent } from "p-event";
 import * as msgpack from "@msgpack/msgpack";
 import type { ExpectStatic as VitestExpect } from "vitest";
 import type { Expect as PlaywrightExpect } from "@playwright/test";

@@ -104,11 +104,7 @@ export function OBSSettings() {
   );
 }
 
-function AddToOBS({
-  item,
-}: {
-  item: CompleteContinuityItemModel;
-}) {
+function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
   const queryClient = useQueryClient();
   const addToOBS = ipc.obs.addMediaAsScene.useMutation();
   const localMedia = ipc.media.getLocalMedia.useQuery();
@@ -352,11 +348,7 @@ function AddToOBS({
   );
 }
 
-function ContinuityItem({
-  item,
-}: {
-  item: CompleteContinuityItemModel;
-}) {
+function ContinuityItem({ item }: { item: CompleteContinuityItemModel }) {
   return (
     <TableRow>
       <TableCell className="text-lg font-bold align-middle h-full flex items-center">

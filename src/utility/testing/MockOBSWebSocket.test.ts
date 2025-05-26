@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import MockOBSWebSocket from "./MockOBSWebSocket.js";
 import { WebSocket } from "ws";
-import {pEvent, pEventIterator} from "p-event";
+import { pEvent, pEventIterator } from "p-event";
 import OBSWebSocket, { EventSubscription } from "obs-websocket-js";
 
 describe("MockOBSWebSocket", async () => {

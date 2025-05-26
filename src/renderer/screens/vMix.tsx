@@ -40,7 +40,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/renderer/components/alert-dialog";
-import { CompleteAssetModel, CompleteRundownType, RundownItem } from "@/types/serverAPILenses";
+import {
+  CompleteAssetModel,
+  CompleteRundownType,
+  RundownItem,
+} from "@/types/serverAPILenses";
 
 export function VMixConnection() {
   const [state] = ipc.vmix.getConnectionState.useSuspenseQuery();
@@ -690,9 +694,7 @@ function AssetCategory(props: {
   );
 }
 
-function RundownAssets(props: {
-  rundown: CompleteRundownType;
-}) {
+function RundownAssets(props: { rundown: CompleteRundownType }) {
   const assets: Map<string, CompleteAssetModel[]> = useMemo(() => {
     const byCategory = new Map();
     for (const asset of props.rundown.assets) {
@@ -745,9 +747,7 @@ function Rundown(props: { rundown: CompleteRundownType }) {
   );
 }
 
-export default function VMixScreen(props: {
-  rundown: CompleteRundownType;
-}) {
+export default function VMixScreen(props: { rundown: CompleteRundownType }) {
   const connectionState = ipc.vmix.getConnectionState.useQuery();
 
   if (connectionState.isLoading) {

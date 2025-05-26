@@ -72,9 +72,7 @@ export async function isListPlaying(listName: string): Promise<boolean> {
   return state["@_state"] === "Running";
 }
 
-export function getInputTypeForAsset(
-  asset: CompleteAssetModel,
-): InputType {
+export function getInputTypeForAsset(asset: CompleteAssetModel): InputType {
   const extension = asset.media!.name.split(".").pop();
   switch (extension) {
     case "gtxml":

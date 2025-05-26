@@ -18,7 +18,10 @@ function dateToTimeMs(date: Date) {
 const vtColour = "#3E75E8";
 const continuityColour = "#FF7878";
 
-export function showToOntimeEvents(show: CompleteShowModel, rundownId?: number) {
+export function showToOntimeEvents(
+  show: CompleteShowModel,
+  rundownId?: number,
+) {
   const events: Omit<OntimeFullEvent, "id" | "revision">[] = [];
   let startTime = show.start;
   if (rundownId) {

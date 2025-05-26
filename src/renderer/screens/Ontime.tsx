@@ -14,7 +14,11 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/renderer/components/alert-dialog";
-import { Dialog, DialogContent, DialogHeader } from "@/renderer/components/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+} from "@/renderer/components/dialog";
 import { CompleteShowModel } from "@/types/serverAPILenses";
 
 export function OntimeSettings() {
