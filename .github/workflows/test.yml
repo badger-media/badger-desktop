@@ -41,7 +41,7 @@ jobs:
           cache-dependency-path: "yarn.lock"
       - run: yarn install --immutable --inline-builds
 
-      - run: yarn prettier --check '**/*.{ts,tsx}'
+      - run: yarn prettier:check
 
   lint:
     runs-on: ubuntu-latest

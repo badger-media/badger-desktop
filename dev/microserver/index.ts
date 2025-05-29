@@ -57,12 +57,13 @@ function routerize(obj: Record<string, any>) {
 }
 
 const scenarioRouters: Record<string, ReturnType<(typeof t)["router"]>> = {};
-for (const scenario of readdirSync(path.join(import.meta.dirname, "scenarios"))) {
+for (const scenario of readdirSync(
+  path.join(import.meta.dirname, "scenarios"),
+)) {
   console.log(`Building router for ${scenario}`);
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const scenarioResponses = (await import(
-    `./scenarios/${scenario}/responses`,
-  )).default;
+  const scenarioResponses = (await import(`./scenarios/${scenario}/responses`))
+    .default;
   const responses = {};
   for (const endpoint of Object.keys(scenarioResponses)) {
     set(responses, endpoint, scenarioResponses[endpoint]);
@@ -97,7 +98,10 @@ app.use("/:scenario/api/trpc", async (req, res, next) => {
   })(req, res, next);
 });
 
-app.use("/testMedia", express.static(path.join(import.meta.dirname, "testMedia")));
+app.use(
+  "/testMedia",
+  express.static(path.join(import.meta.dirname, "testMedia")),
+);
 
 app.get("/", (_, res) => {
   res.setHeader("Content-Type", "text/plain");
