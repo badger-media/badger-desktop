@@ -1,7 +1,6 @@
 import {
   CreateTRPCClientOptions,
   createTRPCProxyClient,
-  TRPCClientError,
 } from "@trpc/client";
 import { ipcLink } from "electron-trpc/renderer";
 import { createTRPCReact } from "@trpc/react-query";
