@@ -9,6 +9,7 @@ import {
   PartialShowModel,
 } from "@/types/serverAPILenses";
 import * as packageJSON from "../../../../package.json" with { type: "json" };
+import { pick } from "lodash-es";
 
 export const sampleRundown: CompleteRundownType = {
   id: 1,
@@ -57,9 +58,10 @@ export const testMedia: CompleteMediaModel = {
   rawPath: "media/1/raw/smpte_bars_15s.mp4",
   downloadURL: `http://localhost:${MICRO_SERVER_PORT}/testMedia/smpte_bars_15s.mp4`,
   assets: [],
-  continuityItems: [sampleShow.continuityItems[0]],
+  // These Object.assigns are needed to avoid circular references in the sample data
+  continuityItems: [Object.assign({}, sampleShow.continuityItems[0])],
   durationSeconds: 15,
-  rundownItems: [sampleRundown.items[0]],
+  rundownItems: [Object.assign({}, sampleRundown.items[0])],
   state: "Ready",
   tasks: [
     {
@@ -121,7 +123,7 @@ const responses = {
     )
     .output(z.custom<PartialShowModel[]>())
     .query(async () => {
-      return [sampleShow];
+      return [pick(sampleShow, ["id", "name", "start", "version"])];
     }) satisfies Real["shows"]["listUpcoming"],
   "shows.get": proc
     .input(z.object({ id: z.number() }))
