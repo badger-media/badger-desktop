@@ -3,7 +3,6 @@ import { test } from "./desktopE2EUtils";
 import * as fsp from "node:fs/promises";
 import {
   directlyCreateTestMedia,
-  loadServerEnvVars,
   server,
 } from "./serverAPI";
 import type VMixConnection from "../../src/main/vmix/vmix";
@@ -136,20 +135,19 @@ test("load assets into vMix", async ({ app: [app, page], testMediaPath }) => {
   // so we can't cheat like we normally do and do a direct upload.
   // So we can't use directlyCreateTestMedia here.
   // Instead, we cheat even harder.
-  const env = loadServerEnvVars();
 
   const s3 = new S3Client({
-    endpoint: env.S3_ENDPOINT,
-    region: env.S3_REGION,
+    endpoint: process.env.S3_ENDPOINT,
+    region: process.env.S3_REGION,
     forcePathStyle: true,
     credentials: {
-      accessKeyId: env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
   });
   await s3.send(
     new PutObjectCommand({
-      Bucket: env.STORAGE_BUCKET!,
+      Bucket: process.env.STORAGE_BUCKET!,
       Key: `test_temporary/smpte_bars_15s.mp4`,
       Body: await fsp.readFile(__dirname + "/../testdata/smpte_bars_15s.mp4"),
     }),
