@@ -39,6 +39,7 @@ export const test = base.extend<{
       ...process.env,
       NODE_ENV: "test",
       E2E_TEST: "true",
+      BADGER_TEST_SCENARIO: "complete: " + testInfo.title,
       __TEST_SUPPORTED_INTEGRATIONS: JSON.stringify(supportedIntegrations),
       ...appEnv,
     };

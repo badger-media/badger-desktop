@@ -46,6 +46,7 @@ const test = base.extend<{
         ...process.env,
         NODE_ENV: "test",
         E2E_TEST: "true",
+        BADGER_TEST_SCENARIO: "standalone: " + testInfo.title,
         __USE_MOCK_VMIX: "true",
         __TEST_SETTINGS_MEDIA: `{ "mediaPath": ${JSON.stringify(testMediaPath)} }`,
         __TEST_SUPPORTED_INTEGRATIONS: JSON.stringify([

@@ -32,6 +32,9 @@ console.error = logger.error;
 logger.info(
   `Badger Desktop v${global.__APP_VERSION__} ${global.__ENVIRONMENT__} (${global.__GIT_COMMIT__}) starting up.`,
 );
+if (process.env.BADGER_TEST_SCENARIO) {
+  logger.info(`Running test scenario: ${process.env.BADGER_TEST_SCENARIO}`);
+}
 
 if (import.meta.env.VITE_DESKTOP_SENTRY_DSN) {
   try {
