@@ -65,13 +65,16 @@ services:
       - "4001:4001"
     volumes:
       - ontime_data:/server/preloaded-db
-  
+
   server:
     image: ghcr.io/badger-media/badger/server:${BADGER_VERSION:-latest}
     depends_on:
-      - postgres
-      - minio
-      - tusd
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      tusd:
+        condition: service_started
     platform: linux/amd64
     ports:
       - "3000:3000"
