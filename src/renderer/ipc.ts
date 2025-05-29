@@ -1,4 +1,4 @@
-import { CreateTRPCClientOptions, createTRPCProxyClient } from "@trpc/client";
+import { CreateTRPCClientOptions, createTRPCProxyClient, TRPCClientError } from "@trpc/client";
 import { ipcLink } from "electron-trpc/renderer";
 import { createTRPCReact } from "@trpc/react-query";
 import type { AppRouter } from "../main/ipcApi";
@@ -7,12 +7,14 @@ import { QueryKey, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import logging from "loglevel";
 import { observable } from "@trpc/server/observable";
+import SuperJSON from "superjson";
 
 const logger = logging.getLogger("serverIPC");
 
 export const ipc = createTRPCReact<AppRouter>();
 
 const clientConfig: CreateTRPCClientOptions<AppRouter> = {
+  transformer: SuperJSON,
   links: [
     (_) =>
       ({ op, next }) => {
@@ -40,6 +42,12 @@ const clientConfig: CreateTRPCClientOptions<AppRouter> = {
                 level: "error",
                 message: `--> ${op.type} ${op.path} ${err}`,
               });
+              if (err instanceof Error && err.cause) {
+                ipcProxy.log.mutate({
+                  level: "error",
+                  message: `Error cause: ${err.cause}`,
+                });
+              }
               observer.error(err);
             },
             complete: () => {
