@@ -102,7 +102,7 @@ export async function directlyCreateTestMedia(
   // The env vars used by these are in .env.test
   const s3 = new S3Client({
     endpoint: process.env.S3_ENDPOINT,
-    region: process.env.S3_REGION,
+    region: "us-east-1", // TODO
     forcePathStyle: true,
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
