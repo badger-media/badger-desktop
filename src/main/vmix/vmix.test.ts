@@ -109,7 +109,7 @@ describe("VMixConnection", () => {
 
   test("getFullState", async () => {
     const testXML = await fs.readFile(
-      path.join(__dirname, "__testdata__", "vmix.xml"),
+      path.join(import.meta.dirname, "__testdata__", "vmix.xml"),
       { encoding: "utf-8" },
     );
     const res = vmix.getFullState();

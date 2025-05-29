@@ -65,7 +65,7 @@ test("load VTs into vMix", async ({ app: [app, page], testMediaPath }) => {
   test.slow();
   const testMedia = await directlyCreateTestMedia(
     "smpte_bars_15s.mp4",
-    await fsp.readFile(__dirname + "/../testdata/smpte_bars_15s.mp4"),
+    await fsp.readFile(import.meta.dirname + "/../testdata/smpte_bars_15s.mp4"),
     "rundownItem",
     testShow.rundowns[0].items[0].id,
   );
@@ -146,7 +146,7 @@ test("load assets into vMix", async ({ app: [app, page], testMediaPath }) => {
     new PutObjectCommand({
       Bucket: process.env.STORAGE_BUCKET!,
       Key: `test_temporary/smpte_bars_15s.mp4`,
-      Body: await fsp.readFile(__dirname + "/../testdata/smpte_bars_15s.mp4"),
+      Body: await fsp.readFile(import.meta.dirname + "/../testdata/smpte_bars_15s.mp4"),
     }),
   );
 

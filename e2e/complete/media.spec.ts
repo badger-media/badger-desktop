@@ -65,7 +65,7 @@ test("download media", async ({ app: [app, page], testMediaPath }) => {
   await page.getByRole("button", { name: "Select" }).click();
 
   const testFile = await fsp.readFile(
-    path.join(__dirname, "..", "testdata", "smpte_bars_15s.mp4"),
+    path.join(import.meta.dirname, "..", "testdata", "smpte_bars_15s.mp4"),
   );
   const media = await createAndUploadTestMedia(
     "continuityItem",
@@ -96,7 +96,7 @@ test("delete old media", async ({ app: [app, page], testMediaPath }) => {
   await page.getByRole("button", { name: "Select" }).click();
 
   const testFile = await fsp.readFile(
-    path.join(__dirname, "..", "testdata", "smpte_bars_15s.mp4"),
+    path.join(import.meta.dirname, "..", "testdata", "smpte_bars_15s.mp4"),
   );
   const media = await createAndUploadTestMedia(
     "continuityItem",
