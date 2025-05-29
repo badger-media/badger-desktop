@@ -1,7 +1,4 @@
-import {
-  CreateTRPCClientOptions,
-  createTRPCProxyClient,
-} from "@trpc/client";
+import { CreateTRPCClientOptions, createTRPCProxyClient } from "@trpc/client";
 import { ipcLink } from "electron-trpc/renderer";
 import { createTRPCReact } from "@trpc/react-query";
 import type { AppRouter } from "../main/ipcApi";

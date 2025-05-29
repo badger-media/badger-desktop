@@ -19,7 +19,8 @@
     "test:e2e:debug": "E2E_TEST=true BADGER_LOG_LEVEL=trace DEBUG='pw:browser*,mows*' playwright test",
     "test:e2e:ui": "E2E_TEST=true playwright test --ui",
     "microserver": "tsx dev/microserver/index.ts",
-    "microserver:watch": "tsx --watch dev/microserver/index.ts"
+    "microserver:watch": "tsx --watch dev/microserver/index.ts",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": {
@@ -27,6 +28,10 @@
     "email": "marks@markspolakovs.me"
   },
   "license": "MIT",
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": "eslint --fix",
+    "*": "prettier --ignore-unknown --write"
+  },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -117,7 +122,9 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "express": "^5.1.0",
     "express-urlrewrite": "^2.0.3",
+    "husky": "^9.1.7",
     "immer": "^10.1.1",
+    "lint-staged": "^16.1.0",
     "p-event": "^6.0.1",
     "postcss": "^8.4.27",
     "prettier": "^3.0.3",

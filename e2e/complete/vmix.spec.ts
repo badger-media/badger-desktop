@@ -146,7 +146,9 @@ test("load assets into vMix", async ({ app: [app, page], testMediaPath }) => {
     new PutObjectCommand({
       Bucket: process.env.STORAGE_BUCKET!,
       Key: `test_temporary/smpte_bars_15s.mp4`,
-      Body: await fsp.readFile(import.meta.dirname + "/../testdata/smpte_bars_15s.mp4"),
+      Body: await fsp.readFile(
+        import.meta.dirname + "/../testdata/smpte_bars_15s.mp4",
+      ),
     }),
   );
 
