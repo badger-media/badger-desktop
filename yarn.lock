@@ -5499,7 +5499,6 @@ __metadata:
     client-only: "npm:^0.0.1"
     clsx: "npm:^2.1.1"
     date-fns: "npm:^2.30.0"
-    dotenv-flow: "npm:^4.1.0"
     electron: "npm:31.7.1"
     electron-builder: "npm:^24.13.3"
     electron-builder-squirrel-windows: "npm:^25.0.0-alpha.7"
@@ -6696,16 +6695,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dotenv-flow@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "dotenv-flow@npm:4.1.0"
-  dependencies:
-    dotenv: "npm:^16.0.0"
-  checksum: 10c0/1f88bc4edfede3b3066b3980e25f7df1e008233f5a2506580378289aa042574a68c7fdb2433e3b96c9456aa9534de1e173f2fe8eb815476bec9d4b8812198ad9
-  languageName: node
-  linkType: hard
-
-"dotenv@npm:^16.0.0, dotenv@npm:^16.3.1, dotenv@npm:^16.4.5":
+"dotenv@npm:^16.3.1, dotenv@npm:^16.4.5":
   version: 16.5.0
   resolution: "dotenv@npm:16.5.0"
   checksum: 10c0/5bc94c919fbd955bf0ba44d33922a1e93d1078e64a1db5c30faeded1d996e7a83c55332cb8ea4fae5a9ca4d0be44cbceb95c5811e70f9f095298df09d1997dd9

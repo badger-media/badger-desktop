@@ -76,7 +76,9 @@ const createWindow = async () => {
   if (process.env["ELECTRON_RENDERER_URL"]) {
     await mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
-    await mainWindow.loadFile(path.join(import.meta.dirname, `../renderer/index.html`));
+    await mainWindow.loadFile(
+      path.join(import.meta.dirname, `../renderer/index.html`),
+    );
   }
 
   // Open the DevTools.

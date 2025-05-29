@@ -8,9 +8,6 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import dotenvFlow from "dotenv-flow";
-import path from "path";
-import { existsSync } from "fs";
 
 export const server = createTRPCProxyClient<API>({
   links: [

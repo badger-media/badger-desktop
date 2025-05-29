@@ -1,10 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./desktopE2EUtils";
 import * as fsp from "node:fs/promises";
-import {
-  directlyCreateTestMedia,
-  server,
-} from "./serverAPI";
+import { directlyCreateTestMedia, server } from "./serverAPI";
 import type VMixConnection from "../../src/main/vmix/vmix";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { CompleteShowModel } from "@/types/serverAPILenses";

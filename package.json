@@ -60,7 +60,6 @@
     "client-only": "^0.0.1",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
-    "dotenv-flow": "^4.1.0",
     "electron-log": "^4.4.8",
     "electron-settings": "^4.0.2",
     "electron-squirrel-startup": "^1.0.0",
