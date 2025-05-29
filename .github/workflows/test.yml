@@ -119,6 +119,9 @@ jobs:
 
       - name: Make logs folder
         run: mkdir -p ${{ runner.temp }}/logs
+      
+      - name: Workaround for electron/electron#42510
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Run Playwright tests
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn ${{ runner.debug && 'test:e2e:debug' || 'test:e2e' }} --project standalone
@@ -166,6 +169,9 @@ jobs:
 
       - name: Make logs folder
         run: mkdir -p ${{ runner.temp }}/logs
+
+      - name: Workaround for electron/electron#42510
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Run Playwright tests
         run: xvfb-run --auto-servernum --server-args="-screen 0 1280x960x24" -- yarn ${{ runner.debug && 'test:e2e:debug' || 'test:e2e' }} --project complete
