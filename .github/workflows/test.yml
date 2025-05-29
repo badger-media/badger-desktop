@@ -93,7 +93,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/coverage-final.json
- 
+
   test-e2e-desktop-standalone:
     timeout-minutes: 60
     runs-on: ubuntu-latest
@@ -119,7 +119,7 @@ jobs:
 
       - name: Make logs folder
         run: mkdir -p ${{ runner.temp }}/logs
-      
+
       - name: Workaround for electron/electron#42510
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
@@ -160,7 +160,7 @@ jobs:
 
       - name: Docker Compose
         uses: hoverkraft-tech/compose-action@v2.0.2
-      
+
       - name: Migrate Server database
         run: docker compose exec -T server npx -y prisma migrate deploy --schema utility/prisma/schema.prisma
 
@@ -172,6 +172,9 @@ jobs:
 
       - name: Make logs folder
         run: mkdir -p ${{ runner.temp }}/logs
+
+      - name: Hack downloading from minio into working
+        run: echo "127.0.0.1 minio" | sudo tee -a /etc/hosts
 
       - name: Workaround for electron/electron#42510
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
