@@ -79,6 +79,9 @@ export async function createAndUploadTestMedia(
 // through the whole upload/process lifecycle, uploads the file to S3 directly
 // and sets it as "Ready".
 // A very similar function is used in Server's tests in server/e2e/lib.ts.
+// TODO: This whole thing is a hack though, is there a better way?
+// For example still uploaading to Tus but setting some kind of upload metadata
+// that short-cuts the processing (in E2E_TEST only)?
 export async function directlyCreateTestMedia(
   fileName: string,
   file: Buffer,
@@ -99,29 +102,27 @@ export async function directlyCreateTestMedia(
   const rawPath = `media/${media.id}/raw/${fileName}`;
   const finalPath = `media/${media.id}/final/${fileName}`;
 
-  // We need to access server's env vars, as desktop doesn't have the S3 ones.
-  const env = loadServerEnvVars();
-
+  // The env vars used by these are in .env.test
   const s3 = new S3Client({
-    endpoint: env.S3_ENDPOINT,
-    region: env.S3_REGION,
+    endpoint: process.env.S3_ENDPOINT,
+    region: process.env.S3_REGION,
     forcePathStyle: true,
     credentials: {
-      accessKeyId: env.AWS_ACCESS_KEY_ID!,
-      secretAccessKey: env.AWS_SECRET_ACCESS_KEY!,
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
     },
   });
   await s3.send(
     new PutObjectCommand({
-      Bucket: env.STORAGE_BUCKET!,
+      Bucket: process.env.STORAGE_BUCKET!,
       Key: rawPath,
       Body: file,
     }),
   );
   await s3.send(
     new CopyObjectCommand({
-      Bucket: env.STORAGE_BUCKET!,
-      CopySource: `${env.STORAGE_BUCKET!}/${rawPath}`,
+      Bucket: process.env.STORAGE_BUCKET!,
+      CopySource: `${process.env.STORAGE_BUCKET!}/${rawPath}`,
       Key: finalPath,
     }),
   );
@@ -133,16 +134,4 @@ export async function directlyCreateTestMedia(
       state: "Ready",
     },
   });
-}
-
-export function loadServerEnvVars() {
-  const { parsed: env, error } = dotenvFlow.load(
-    dotenvFlow
-      .listFiles({ path: path.resolve(__dirname + "../../../../server") })
-      .filter((x) => existsSync(x)),
-  );
-  if (!env) {
-    throw new Error(String(error));
-  }
-  return env;
 }
