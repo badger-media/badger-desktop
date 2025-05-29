@@ -160,6 +160,9 @@ jobs:
 
       - name: Docker Compose
         uses: hoverkraft-tech/compose-action@v2.0.2
+      
+      - name: Migrate Server database
+        run: docker compose exec -T server npx -y prisma migrate deploy
 
       - name: Install dependencies
         run: yarn install --immutable --inline-builds
