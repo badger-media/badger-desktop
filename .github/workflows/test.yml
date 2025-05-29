@@ -132,7 +132,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-desktop
+          name: playwright-report-desktop-standalone
           path: |
             ./playwright-report/
             ./traces/
@@ -185,7 +185,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report-desktop
+          name: playwright-report-desktop-complete
           path: |
             ./playwright-report/
             ./traces/
