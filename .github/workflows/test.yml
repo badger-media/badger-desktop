@@ -162,7 +162,7 @@ jobs:
         uses: hoverkraft-tech/compose-action@v2.0.2
       
       - name: Migrate Server database
-        run: docker compose exec -T server npx -y prisma migrate deploy
+        run: docker compose exec -T server npx -y prisma migrate deploy --schema utility/prisma/schema.prisma
 
       - name: Install dependencies
         run: yarn install --immutable --inline-builds
