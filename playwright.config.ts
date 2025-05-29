@@ -19,9 +19,6 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  // Our tests aren't concurrency-safe because they modify Server state
-  // TODO[BDGR-178]: Can we up this for standalone tests?
-  workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -39,6 +36,7 @@ export default defineConfig({
       name: "complete",
       use: {},
       testDir: "./e2e/complete",
+      workers: 1, // Complete tests are not parallelized because they modify Server state
     },
     {
       name: "standalone",
