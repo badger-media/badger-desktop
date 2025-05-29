@@ -165,20 +165,6 @@ jobs:
         with:
           ffmpeg-version: "release"
 
-      - name: Build server
-        run: |
-          yarn build
-          cp -r public .next/standalone/server/public
-          mkdir -p .next/standalone/server/.next
-          cp -r .next/static .next/standalone/server/.next/static
-        working-directory: ./server
-
-      - name: Build Jobrunner
-        run: |
-          yarn build
-          cp ../utility/prisma/schema.prisma .
-        working-directory: ./jobrunner
-
       - name: Build desktop
         run: yarn build
 
