@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "E2E_TEST=true playwright test",
-    "test:e2e:debug": "E2E_TEST=true DEBUG='pw:browser*,mows*' playwright test",
+    "test:e2e:debug": "E2E_TEST=true BADGER_LOG_LEVEL=trace DEBUG='pw:browser*,mows*' playwright test",
     "test:e2e:ui": "E2E_TEST=true playwright test --ui",
     "microserver": "tsx dev/microserver/index.ts",
     "microserver:watch": "tsx --watch dev/microserver/index.ts"

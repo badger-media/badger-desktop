@@ -27,7 +27,7 @@ logging.methodFactory = function (level) {
   };
 };
 
-export let logLevel = (process.env.LOG_LEVEL as LogLevelNames) ?? "debug";
+export let logLevel = (process.env.BADGER_LOG_LEVEL as LogLevelNames ?? process.env.LOG_LEVEL as LogLevelNames) ?? "debug";
 logging.setLevel(logLevel);
 prefix.reg(logging);
 prefix.apply(logging, {
