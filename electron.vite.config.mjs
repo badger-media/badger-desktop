@@ -76,10 +76,10 @@ const base = defineConfig({
   resolve: {
     alias: [
       {
-        find: '@',
-        replacement: fileURLToPath(new URL('./src', import.meta.url))
+        find: "@",
+        replacement: fileURLToPath(new URL("./src", import.meta.url)),
       },
-    ]
+    ],
   },
   build: {
     target: "node22",
@@ -150,6 +150,11 @@ const config = {
           }),
       ].filter(Boolean),
       build: {
+        // Check package.json for the current Electron version
+        // and https://www.electronjs.org/docs/latest/tutorial/electron-timelines
+        // for the current supported Chrome version.
+        // TODO: Automate this
+        target: "chrome126",
         rollupOptions: {
           input: "./src/renderer/index.html",
         },
