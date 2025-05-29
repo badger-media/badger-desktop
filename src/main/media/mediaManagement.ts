@@ -133,7 +133,8 @@ async function doDownloadMedia() {
         IPCEvents.send("downloadStatusChange");
       });
     } catch (e) {
-      logger.error(`Error downloading media ${info.id} [${newFileName}]`, e);
+      logger.error(`Error downloading media ${info.id} [${newFileName}]`);
+      logger.error(e);
       status.status = "error";
       status.error = String(e);
       if (downloadQueue.length > 0) {
