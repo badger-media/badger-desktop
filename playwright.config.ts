@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+import dotenvFlow from "dotenv-flow";
+dotenvFlow.config();
 
 /**
  * Read environment variables from file.
