@@ -163,7 +163,7 @@ jobs:
 
       - uses: FedericoCarboni/setup-ffmpeg@v3
         with:
-          ffmpeg-version: "release"
+          ffmpeg-version: "7.0.2"
 
       - name: Build desktop
         run: yarn build
