@@ -1,178 +1,149 @@
-import electronSettings from "electron-settings";
-import { safeStorage } from "./safeStorage";
-import { z } from "zod";
+import {
+  createAction,
+  createAsyncThunk,
+  createReducer,
+} from "@reduxjs/toolkit";
+import { AnyZodObject, z, ZodType } from "zod";
+import { set, throttle, isEqual, cloneDeep, defaultsDeep } from "lodash";
+import { getSettingsStore } from "./settingsStorage";
+import { listenOnStore } from "../storeListener";
+import { connectToServer } from "./serverConnectionState";
+import { getLogger } from "./logging";
+import { connectToOBS } from "../obs/state";
+import { original } from "immer";
+import type { LogLevelNames } from "loglevel";
 
-/*
- * In E2E tests we don't want settings to persist between tests, so we use
- * an in-memory store that can be reset by the test harness.
- */
+const logger = getLogger("settings");
 
-interface SettingsStore {
-  get(key: string): Promise<unknown | undefined>;
-  set(key: string, value: unknown): Promise<void>;
-  unset(key: string): Promise<void>;
-}
-
-const testSettingsBacking = new Map<string, unknown>();
-const testSettingsStore: SettingsStore = {
-  async get(key: string) {
-    if (process.env[`__TEST_SETTINGS_${key.toUpperCase()}`]) {
-      // TODO[BDGR-175]: validate that this matches the requisite schema
-      // Will require slightly refactoring this file to allow getting the schema
-      // by name, though as a bonus this should let us avoid duplicating the load/save code
-      return JSON.parse(
-        process.env[`__TEST_SETTINGS_${key.toUpperCase()}`] as string,
-      );
-    }
-    return testSettingsBacking.get(key);
+export const AppSettingsSchema = z.object({
+  server: z.object({
+    endpoint: z.string().url().or(z.null()),
+    password: z.string(),
+  }),
+  obs: z.object({
+    host: z.string(),
+    port: z.number(),
+    password: z.string(),
+  }),
+  media: z.object({
+    mediaPath: z.string(),
+    downloader: z.enum(["Auto", "Node", "Curl"]),
+  }),
+  devtools: z.object({
+    enabled: z.boolean(),
+  }),
+  ontime: z.object({
+    host: z.string().url().or(z.null()),
+  }),
+  logging: z.object({
+    level: z.enum(["trace", "debug", "info", "warn", "error"]),
+  }),
+});
+export type AppSettings = z.infer<typeof AppSettingsSchema>;
+const defaultSettings: AppSettings = {
+  devtools: {
+    enabled: false,
   },
-  async set(key: string, value: unknown) {
-    testSettingsBacking.set(key, value);
+  media: {
+    mediaPath: "",
+    downloader: "Auto",
   },
-  async unset(key: string) {
-    testSettingsBacking.delete(key);
+  obs: {
+    host: "",
+    port: 4455,
+    password: "",
+  },
+  ontime: {
+    host: null,
+  },
+  server: {
+    endpoint: null,
+    password: "",
+  },
+  logging: {
+    level: (process.env.BADGER_LOG_LEVEL as LogLevelNames) ?? "info",
   },
 };
+export const SettingsStateSchema = AppSettingsSchema.extend({
+  _loaded: z.boolean(),
+});
+type SettingsState = z.infer<typeof SettingsStateSchema>;
 
-const settings: SettingsStore =
-  process.env.E2E_TEST === "true" ? testSettingsStore : electronSettings;
+export const setSetting = createAction(
+  "settings/setSetting",
+  (group: keyof AppSettings, field: string, value: unknown) => {
+    const groupSchema: AnyZodObject =
+      AppSettingsSchema.shape[group as keyof AppSettings];
+    const fieldSchema: ZodType = groupSchema.shape[field];
+    const val = fieldSchema.parse(value);
+    return { payload: { key: `${group}.${field}`, val } };
+  },
+);
 
-export async function migrateSettings() {
-  await settings.unset("localMedia");
-}
+export const initialiseSettings = createAsyncThunk(
+  "settings/initialise",
+  async () => {
+    if (process.env.E2E_TEST === "true") {
+      logger.info("Running in E2E test mode, not loading settings from disk");
+      return;
+    }
+    const store = await getSettingsStore();
+    return await store.loadSettings();
+  },
+);
 
-/**
- * Since settings are stored as JSON files on disk, we pass them through zod as a sanity check.
- */
-const ServerSettingsSchema = z.object({
-  endpoint: z.string().url(),
-  password: z.string(),
+export const settingsReducer = createReducer({} as SettingsState, (builder) => {
+  builder.addCase(initialiseSettings.fulfilled, (state, action) => {
+    if (!action.payload) {
+      state._loaded = true;
+      return;
+    }
+    return {
+      ...action.payload,
+      _loaded: true,
+    };
+  });
+  builder.addCase(setSetting, (state, action) => {
+    set(state, action.payload.key, action.payload.val);
+    SettingsStateSchema.parse(state); // validate
+  });
+
+  // Save server connection details when we connect
+  builder.addCase(connectToServer.fulfilled, (state, action) => {
+    state.server.endpoint = action.meta.arg.host;
+    state.server.password = action.meta.arg.password;
+  });
+  // dto for OBS
+  builder.addCase(connectToOBS.fulfilled, (state, action) => {
+    state.obs.host = action.meta.arg.host;
+    state.obs.port = action.meta.arg.port || 4455;
+    state.obs.password = action.meta.arg.password;
+  });
+
+  // This ensures that the state always has at least the defaults
+  builder.addDefaultCase((state) => {
+    const rv = cloneDeep(original(state)) ?? {};
+    defaultsDeep(rv, defaultSettings);
+    return { _loaded: true, ...rv } as SettingsState;
+  });
 });
 
-export async function getServerSettings(): Promise<z.infer<
-  typeof ServerSettingsSchema
-> | null> {
-  const settingsDataRaw = await settings.get("server");
-  if (settingsDataRaw === undefined) {
-    return null;
+const doSaveSettings = throttle(async function (settings: AppSettings) {
+  if (process.env.E2E_TEST === "true") {
+    logger.info("Running in E2E test mode, not saving settings to disk");
+    return;
   }
-  const settingsData = ServerSettingsSchema.parse(settingsDataRaw);
-  settingsData.password = safeStorage.decryptString(
-    Buffer.from(settingsData.password, "base64"),
-  );
-  return settingsData;
-}
+  const store = await getSettingsStore();
+  await store.saveSettings(settings);
+}, 500);
 
-export async function saveServerSettings(
-  valRaw: z.infer<typeof ServerSettingsSchema>,
-): Promise<void> {
-  const val = { ...valRaw };
-  val.password = safeStorage.encryptString(val.password).toString("base64");
-  await settings.set("server", val);
-}
-
-const OBSSettingsSchema = z.object({
-  host: z.string(),
-  port: z.number(),
-  password: z.string(),
+listenOnStore({
+  predicate: (action, newState, oldState) =>
+    !isEqual(newState.settings, oldState.settings) &&
+    !initialiseSettings.fulfilled.match(action),
+  effect: async (_, api) => {
+    const newSettings = api.getState().settings;
+    // TODO: feedback?
+    await doSaveSettings(newSettings);
+  },
 });
-
-export async function getOBSSettings(): Promise<z.infer<
-  typeof OBSSettingsSchema
-> | null> {
-  const settingsDataRaw = await settings.get("obs");
-  if (settingsDataRaw === undefined) {
-    return null;
-  }
-  const settingsData = OBSSettingsSchema.parse(settingsDataRaw);
-  settingsData.password = safeStorage.decryptString(
-    Buffer.from(settingsData.password, "base64"),
-  );
-  return settingsData;
-}
-
-export async function saveOBSSettings(
-  valIn: z.infer<typeof OBSSettingsSchema>,
-): Promise<void> {
-  const val = { ...valIn };
-  val.password = safeStorage.encryptString(val.password).toString("base64");
-  await settings.set("obs", val);
-}
-
-const MediaSettingsSchema = z.object({
-  mediaPath: z.string(),
-});
-
-export async function getMediaSettings(): Promise<z.infer<
-  typeof MediaSettingsSchema
-> | null> {
-  const settingsData = await settings.get("media");
-  if (settingsData === undefined) {
-    return null;
-  }
-  return MediaSettingsSchema.parse(settingsData);
-}
-
-export async function saveMediaSettings(
-  val: z.infer<typeof MediaSettingsSchema>,
-): Promise<void> {
-  await settings.set("media", val);
-}
-
-export const devToolsConfigSchema = z.object({
-  enabled: z.boolean(),
-});
-export type DevToolsConfigType = z.infer<typeof devToolsConfigSchema>;
-
-export async function getDevToolsConfig(): Promise<
-  z.infer<typeof devToolsConfigSchema>
-> {
-  const settingsData = await settings.get("devTools");
-  if (settingsData === undefined) {
-    return { enabled: false };
-  }
-  return devToolsConfigSchema.parse(settingsData);
-}
-
-export async function saveDevToolsConfig(
-  val: z.infer<typeof devToolsConfigSchema>,
-): Promise<void> {
-  await settings.set("devTools", val);
-}
-
-export const ontimeSettingsSchema = z.object({
-  host: z.string().url(),
-});
-export type OntimeSettings = z.infer<typeof ontimeSettingsSchema>;
-
-export async function getOntimeSettings(): Promise<OntimeSettings | null> {
-  const settingsData = await settings.get("ontime");
-  if (settingsData === undefined) {
-    return null;
-  }
-  return ontimeSettingsSchema.parse(settingsData);
-}
-
-export async function saveOntimeSettings(val: OntimeSettings): Promise<void> {
-  await settings.set("ontime", val);
-}
-
-export const downloadsSettingsSchema = z.object({
-  downloader: z.enum(["Auto", "Node", "Curl"]),
-});
-
-export type DownloadsSettings = z.infer<typeof downloadsSettingsSchema>;
-
-export async function getDownloadsSettings(): Promise<DownloadsSettings> {
-  const settingsData = await settings.get("downloads");
-  if (settingsData === undefined) {
-    return { downloader: "Auto" };
-  }
-  return downloadsSettingsSchema.parse(settingsData);
-}
-
-export async function saveDownloadsSettings(
-  val: DownloadsSettings,
-): Promise<void> {
-  await settings.set("downloads", val);
-}

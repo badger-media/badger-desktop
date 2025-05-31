@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
 import dotenvFlow from "dotenv-flow";
 dotenvFlow.config();
 
@@ -12,7 +12,6 @@ dotenvFlow.config();
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
-  testDir: "./e2e",
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -37,18 +36,44 @@ export default defineConfig({
       use: {},
       testDir: "./e2e/complete",
       workers: 1, // Complete tests are not parallelized because they modify Server state
+      fullyParallel: false,
     },
     {
       name: "standalone",
-      use: {},
+      use: {
+        ...devices["Desktop Chrome"],
+      },
       testDir: "./e2e/standalone",
     },
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: "yarn microserver",
-    url: "http://127.0.0.1:8594",
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: "npx -y @redux-devtools/cli --port 5175",
+      url: "http://localhost:5175",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "yarn dev:server",
+      url: "http://localhost:5174/getState",
+      reuseExistingServer: !process.env.CI,
+      env: {
+        ...process.env,
+        ENABLE_REDUX_DEVTOOLS: "true",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+    {
+      command: "yarn dev:renderer",
+      url: "http://localhost:5173",
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: "yarn microserver",
+      url: "http://localhost:8594",
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

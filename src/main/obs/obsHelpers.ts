@@ -4,11 +4,11 @@ import {
   OBSVideoSettings,
   SceneItem,
 } from "./obs";
-import invariant from "@/common/invariant";
+import invariant from "../../common/invariant";
 import { getLogger } from "../base/logging";
-import { selectedShow } from "../base/selectedShow";
-import { getLocalMedia } from "../media/mediaManagement";
+import { LocalMediaItem } from "../media/mediaManagement";
 import {
+  CompleteShowModel,
   PartialContinuityItemModel,
   PartialMediaModel,
 } from "@/types/serverAPILenses";
@@ -42,6 +42,8 @@ export const CONTINUITY_SCENE_NAME_REGEXP = /^\d+ - .+? \[#(\d+)]$/;
 export async function addOrReplaceMediaAsScene(
   info: MediaType,
   replaceMode: "none" | "replace" | "force",
+  selectedShow: CompleteShowModel,
+  localMedia: LocalMediaItem[],
 ): Promise<{
   done: boolean;
   warnings: string[];
@@ -58,7 +60,6 @@ export async function addOrReplaceMediaAsScene(
     "addOrReplaceMediaAsScene: No continuity item for media in addMediaAsScene",
   );
   invariant(obsConnection, "no OBS connection");
-  const localMedia = getLocalMedia();
   const item = localMedia.find((x) => x.mediaID === info.id);
   invariant(
     item !== undefined,
@@ -69,7 +70,7 @@ export async function addOrReplaceMediaAsScene(
 
   const mediaSourceName = MEDIA_SOURCE_PREFIX + info.id.toString(10);
   const currentContinuityItem = info.continuityItems.find(
-    (x) => x.showId === selectedShow.value!.id,
+    (x) => x.showId === selectedShow.id,
   );
   invariant(
     currentContinuityItem,

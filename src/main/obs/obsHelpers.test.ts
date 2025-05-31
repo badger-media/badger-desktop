@@ -5,29 +5,25 @@ import {
   MediaType,
 } from "./obsHelpers";
 import { MockOBSConnection } from "./__mocks__/obs";
+import { LocalMediaItem } from "../media/mediaManagement";
+import { CompleteShowModel } from "@/types/serverAPILenses";
 
 vi.mock("./obs");
-vi.mock("../media/mediaManagement", () => ({
-  getLocalMedia: () => [
-    {
-      mediaID: 1,
-      path: "TEST_PATH",
-    },
-  ],
-}));
-vi.mock("../base/selectedShow", async () => {
-  const { BehaviorSubject } = await import("rxjs");
-  return {
-    selectedShow: new BehaviorSubject({
-      id: 1,
-      name: "Test",
-      start: new Date(),
-      rundowns: [],
-      continuityItems: [],
-      version: 1,
-    }),
-  };
-});
+const localMedia: LocalMediaItem[] = [
+  {
+    mediaID: 1,
+    path: "TEST_PATH",
+    sizeBytes: 0,
+  },
+];
+const selectedShow: CompleteShowModel = {
+  id: 1,
+  name: "Test",
+  start: new Date(),
+  rundowns: [],
+  continuityItems: [],
+  version: 1,
+};
 
 describe("addOrReplaceMediaAsScene", () => {
   const testMedia: MediaType = {
@@ -58,7 +54,12 @@ describe("addOrReplaceMediaAsScene", () => {
   });
 
   test("add with no scenes", async () => {
-    const res = await addOrReplaceMediaAsScene(testMedia, "none");
+    const res = await addOrReplaceMediaAsScene(
+      testMedia,
+      "none",
+      selectedShow,
+      localMedia,
+    );
     expect(res).toEqual({
       done: true,
       warnings: [],
@@ -90,7 +91,12 @@ describe("addOrReplaceMediaAsScene", () => {
         },
       ],
     });
-    const res = await addOrReplaceMediaAsScene(testMedia, "none");
+    const res = await addOrReplaceMediaAsScene(
+      testMedia,
+      "none",
+      selectedShow,
+      localMedia,
+    );
     expect(res).toEqual({
       done: false,
       warnings: [],
@@ -103,7 +109,12 @@ describe("addOrReplaceMediaAsScene", () => {
       name: "1 - Test Continuity [#1]",
       sources: [],
     });
-    const res = await addOrReplaceMediaAsScene(testMedia, "none");
+    const res = await addOrReplaceMediaAsScene(
+      testMedia,
+      "none",
+      selectedShow,
+      localMedia,
+    );
     expect(res).toEqual({
       done: true,
       warnings: [],
@@ -123,7 +134,12 @@ describe("addOrReplaceMediaAsScene", () => {
         },
       ],
     });
-    const res = await addOrReplaceMediaAsScene(testMedia, "none");
+    const res = await addOrReplaceMediaAsScene(
+      testMedia,
+      "none",
+      selectedShow,
+      localMedia,
+    );
     expect(res).toMatchInlineSnapshot(`
       {
         "done": false,
@@ -135,7 +151,12 @@ describe("addOrReplaceMediaAsScene", () => {
     `);
     expect(mobs.scenes[0].sources[0].inputName).toBe("Badger Media 999");
 
-    const res2 = await addOrReplaceMediaAsScene(testMedia, "replace");
+    const res2 = await addOrReplaceMediaAsScene(
+      testMedia,
+      "replace",
+      selectedShow,
+      localMedia,
+    );
     expect(res2).toEqual({
       done: true,
       warnings: [],
@@ -160,7 +181,12 @@ describe("addOrReplaceMediaAsScene", () => {
         },
       ],
     });
-    const res = await addOrReplaceMediaAsScene(testMedia, "none");
+    const res = await addOrReplaceMediaAsScene(
+      testMedia,
+      "none",
+      selectedShow,
+      localMedia,
+    );
     expect(res).toMatchInlineSnapshot(`
       {
         "done": false,
@@ -171,7 +197,12 @@ describe("addOrReplaceMediaAsScene", () => {
       }
     `);
 
-    const res2 = await addOrReplaceMediaAsScene(testMedia, "force");
+    const res2 = await addOrReplaceMediaAsScene(
+      testMedia,
+      "force",
+      selectedShow,
+      localMedia,
+    );
     expect(res2).toEqual({
       done: true,
       warnings: [],
