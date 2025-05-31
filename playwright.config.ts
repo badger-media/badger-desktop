@@ -72,7 +72,6 @@ export default defineConfig({
     },
     {
       command: "yarn microserver",
-      cwd: "../server",
       url: "http://localhost:8594",
       reuseExistingServer: !process.env.CI,
     },
