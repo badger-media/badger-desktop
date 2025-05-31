@@ -27,10 +27,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Use Node.js 18.x
+
+      - run: corepack enable
+      - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
           cache: "yarn"
           cache-dependency-path: "yarn.lock"
 
@@ -39,15 +41,14 @@ jobs:
       - name: Set version
         shell: pwsh
         run: |
-          $pkg = Get-Content ./desktop/package.json | ConvertFrom-Json
+          $pkg = Get-Content ./package.json | ConvertFrom-Json
           $pkg.version = "${{inputs.tag }}" -replace "^v", ""
           if ("${{ inputs.strip_rc }}" -eq "true") {
             $pkg.version = $pkg.version -replace "-rc.*", ""
           }
-          $pkg | ConvertTo-Json -Depth 32 | Set-Content ./desktop/package.json
+          $pkg | ConvertTo-Json -Depth 32 | Set-Content ./package.json
 
       - run: "yarn package --win --publish never"
-        working-directory: ./desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DESKTOP_SENTRY_DSN: ${{ secrets.DESKTOP_SENTRY_DSN }}
@@ -56,10 +57,10 @@ jobs:
           IS_YSTV_BUILD: ${{ matrix.type == 'ystv' && 'true' || 'false' }}
 
       - name: Clean up
-        run: Remove-Item -Recurse -Force ./desktop/dist/win-unpacked
+        run: Remove-Item -Recurse -Force ./dist/win-unpacked
         shell: pwsh
 
       - uses: actions/upload-artifact@v4
         with:
-          path: ./desktop/dist
+          path: ./dist
           name: badger-desktop-windows${{ matrix.type == 'ystv' && '-ystv' || '' }}
