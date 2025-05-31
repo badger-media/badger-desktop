@@ -28,11 +28,12 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - run: corepack enable
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
+
+      - run: corepack enable
 
       - run: yarn install --immutable
 
