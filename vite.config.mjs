@@ -4,6 +4,7 @@ import { defineConfig, mergeConfig } from "vite";
 import * as fs from "node:fs";
 import { execFileSync } from "node:child_process";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { fileURLToPath } from "node:url";
 
 const packageJSON = JSON.parse(fs.readFileSync("./package.json", "utf-8"));
 const gitCommit =
@@ -33,7 +34,16 @@ export const base = defineConfig({
       disable: process.env.IS_YSTV_BUILD !== "true",
     }),
   ],
+  resolve: {
+    alias: [
+      {
+        find: "@",
+        replacement: fileURLToPath(new URL("./src", import.meta.url)),
+      },
+    ],
+  },
   build: {
+    target: "node22",
     minify: prod ? "esbuild" : false,
     rollupOptions: {
       onwarn(warning, warn) {
@@ -50,21 +60,8 @@ export const base = defineConfig({
         ) {
           return;
         }
-        if (
-          log.cause &&
-          // @ts-expect-error - this is a private API
-          log.cause.message.startsWith(
-            `Use of eval in "../utility/prisma/client/runtime/library.js" is strongly discouraged`,
-          )
-        ) {
-          return;
-        }
         handler(level, log);
       },
-      external: [
-        // Don't bundle Prisma into Desktop
-        /prisma\/client\/runtime/,
-      ],
     },
   },
 });

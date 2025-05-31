@@ -1,10 +1,23 @@
 import commonjs from "vite-plugin-commonjs";
 import { mergeConfig, defineConfig } from "vite";
 import { visualizer } from "rollup-plugin-visualizer";
-
-import * as base from "./vite.config.mjs";
+import * as fsp from "node:fs/promises";
+import "./dev/update-electron-releases.mjs";
+import { base } from "./vite.config.mjs";
 
 const visualizeBundle = process.argv.includes("--visualize-bundle");
+
+const electronReleases = JSON.parse(
+  await fsp.readFile("dev/electron-releases.json", { encoding: "utf-8" }),
+);
+const electronVersion = await fsp.readFile(
+  "node_modules/electron/dist/version",
+  { encoding: "utf-8" },
+);
+const electronChromeVersion = electronReleases.find(
+  (v) => v.version === electronVersion,
+)?.chrome;
+const electronChromeMajor = electronChromeVersion?.split(".")[0];
 
 /**
  * @type {import('electron-vite').UserConfig}
@@ -39,11 +52,7 @@ const config = {
           }),
       ].filter(Boolean),
       build: {
-        // Check package.json for the current Electron version
-        // and https://www.electronjs.org/docs/latest/tutorial/electron-timelines
-        // for the current supported Chrome version.
-        // TODO: Automate this
-        target: "chrome126",
+        target: `chrome${electronChromeMajor}`,
         rollupOptions: {
           input: "./src/renderer/index.html",
         },
