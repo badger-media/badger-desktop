@@ -55,7 +55,7 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: "yarn devServer",
+      command: "yarn dev:server",
       url: "http://localhost:5174/getState",
       reuseExistingServer: !process.env.CI,
       env: {
@@ -66,7 +66,7 @@ export default defineConfig({
       stderr: "pipe",
     },
     {
-      command: "yarn devRenderer",
+      command: "yarn dev:renderer",
       url: "http://localhost:5173",
       reuseExistingServer: !process.env.CI,
     },
