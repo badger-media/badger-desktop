@@ -7,7 +7,21 @@ import { tryConnectToServer } from "./base/serverConnectionState";
 import { tryConnectToOBS as tryConnectToOBS } from "./obs/state";
 import { tryConnectToOntime } from "./ontime/state";
 import { tryConnectToVMix } from "./vmix/state";
+import { getLogger } from "./base/logging";
+import { listenOnStore } from "./storeListener";
 
+const logger = getLogger("preflight");
+
+/**
+ * Array of preflight checks to be executed during application startup.
+ * These checks handle initialization of settings, media, and connections to various services.
+ *
+ * @typedef {Object} PreflightCheck
+ * @property {string} name - Display name of the preflight check
+ * @property {Function} thunk - Redux async thunk to dispatch to execute for this preflight check
+ * @property {boolean} [first] - If true, this check should be executed before others
+ * @property {boolean} [noDelay] - If true, this check does not block app startup and can finish after the user gets to the main screen
+ */
 const PREFLIGHTS = [
   { name: "Settings", thunk: initialiseSettings, first: true },
   { name: "Local media", thunk: localMediaActions.initialise },
@@ -57,6 +71,16 @@ const preflightSlice = createSlice({
   },
 });
 
+listenOnStore({
+  predicate: (_, cur, prev) => cur.preflight.done !== prev.preflight.done,
+  effect: (action, api) => {
+    const state = api.getState();
+    if (state.preflight.done) {
+      logger.info("Preflight complete");
+    }
+  },
+});
+
 export const preflightReducer = preflightSlice.reducer;
 
 export const doPreflight: () => AppThunk = () => async (dispatch) => {
@@ -64,6 +88,7 @@ export const doPreflight: () => AppThunk = () => async (dispatch) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await dispatch(task.thunk() as any);
   }
+  logger.info("Early preflight complete");
   for (const task of PREFLIGHTS.filter((x) => !x.first)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dispatch(task.thunk() as any);

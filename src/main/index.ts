@@ -60,7 +60,7 @@ const createWindow = async () => {
     height: 720,
     icon: Icon,
     webPreferences: {
-      preload: path.join(__dirname, "..", "preload", "preload.js"),
+      preload: path.join(import.meta.dirname, "..", "preload", "preload.cjs"),
     },
   });
 
@@ -69,7 +69,9 @@ const createWindow = async () => {
   if (process.env["ELECTRON_RENDERER_URL"]) {
     await mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
-    await mainWindow.loadFile(path.join(__dirname, `../renderer/index.html`));
+    await mainWindow.loadFile(
+      path.join(import.meta.dirname, `../renderer/index.html`),
+    );
   }
 
   listenOnStore({

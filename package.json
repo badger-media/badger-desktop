@@ -6,7 +6,12 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev:electron": "electron-vite dev",
+    "dev:server": "vite-node src/main/devServer.ts",
+    "dev:renderer": "wait-on http://localhost:5174/getState && vite dev",
+    "dev:browser": "concurrently --names main,rndr -c blue,pink \"yarn dev:server\" \"yarn dev:renderer --open\"",
+    "dev:browser:noOpen": "concurrently --names main,rndr -c blue,pink \"yarn dev:server\" \"yarn dev:renderer\"",
+    "dev": "yarn dev:browser",
     "build": "rimraf out && electron-vite build",
     "package": "rimraf dist && yarn build && electron-builder build -c electron-builder.config.cjs",
     "lint": "eslint src/",
@@ -155,6 +160,7 @@
     "vite-node": "^3.1.4",
     "vite-plugin-commonjs": "^0.10.1",
     "vitest": "^2.0.0",
+    "wait-on": "^8.0.3",
     "webpack": "^5.91.0"
   },
   "packageManager": "yarn@4.9.1",

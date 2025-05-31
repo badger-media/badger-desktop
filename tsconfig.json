@@ -2,6 +2,8 @@
   "extends": "@tsconfig/vite-react/tsconfig.json",
   "compilerOptions": {
     "moduleResolution": "bundler",
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
     "allowImportingTsExtensions": true,
     "downlevelIteration": true,
     "paths": {
