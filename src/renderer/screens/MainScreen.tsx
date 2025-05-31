@@ -1,5 +1,4 @@
-import { ipc, useInvalidateQueryOnIPCEvent } from "./ipc";
-import invariant from "@/common/invariant";
+import invariant from "../../common/invariant";
 import {
   Dialog,
   DialogContent,
@@ -18,42 +17,31 @@ import {
   DropdownMenuTrigger,
 } from "@/renderer/components/dropdown-menu";
 import { Button } from "@/renderer/components/button";
-import {
-  IoAlertSharp,
-  IoCaretDownOutline,
-  IoCheckmarkSharp,
-  IoCog,
-  IoDownloadSharp,
-} from "react-icons/io5";
-import { Suspense, useMemo, useState } from "react";
-import OBSScreen from "./screens/OBS";
-import VMixScreen from "./screens/vMix";
-import { Settings } from "./screens/Settings";
-import { SelectShowForm } from "./ConnectAndSelectShowGate";
+import { IoCaretDownOutline, IoCog, IoDownloadSharp } from "react-icons/io5";
+import { Suspense, useState } from "react";
+import OBSScreen from "./OBS";
+import VMixScreen from "./vMix";
+import { Settings } from "./Settings";
 import {
   Table,
   TableBody,
   TableCell,
   TableRow,
 } from "@/renderer/components/table";
-import { OntimePush } from "./screens/Ontime";
-import { getQueryKey } from "@trpc/react-query";
+import { dispatch, useAppSelector } from "../store";
+import { OntimePush } from "./Ontime";
+import { SelectShowForm } from "./ConnectAndSelectShowGate";
+import { Alert } from "@/renderer/components/alert";
 
 function DownloadTrackerPopup() {
-  const downloadStatus = ipc.media.getDownloadStatus.useQuery(void 0, {
-    refetchInterval: 1000,
-  });
-  useInvalidateQueryOnIPCEvent(
-    getQueryKey(ipc.media.getDownloadStatus),
-    "downloadStatusChange",
+  const downloads = useAppSelector((state) =>
+    (state.localMedia.currentDownload
+      ? [state.localMedia.currentDownload]
+      : []
+    ).concat(state.localMedia.downloadQueue),
   );
 
-  const downloads = useMemo(
-    () => downloadStatus.data?.filter((x) => x.status !== "done"),
-    [downloadStatus.data],
-  );
-
-  if (!downloads?.length) {
+  if (!downloads.length) {
     return null;
   }
 
@@ -86,12 +74,32 @@ function DownloadTrackerPopup() {
   );
 }
 
-export default function MainScreen() {
-  const { data: show } = ipc.getSelectedShow.useQuery();
-  invariant(show, "no selected show"); // this is safe because MainScreen is rendered inside a ConnectAndSelectShowGate
-  const [integrations] = ipc.supportedIntegrations.useSuspenseQuery();
+function GlobalAlerts() {
+  const alerts = useAppSelector((state) => state.globalError.errors);
+  return (
+    <div className="absolute left-0 w-full p-2">
+      {alerts.map((alert) => (
+        <Alert key={alert.id} className="bg-red-700 text-white flex z-50">
+          {alert.message}
+          <button
+            className="ml-auto bg-transparent"
+            aria-label="Close"
+            onClick={() => {
+              dispatch.dismissGlobalError({ id: alert.id });
+            }}
+          >
+            &times;
+          </button>
+        </Alert>
+      ))}
+    </div>
+  );
+}
 
-  const downloadAll = ipc.media.downloadAllMediaForSelectedShow.useMutation();
+export default function MainScreen() {
+  const show = useAppSelector((state) => state.selectedShow.show);
+  invariant(show, "no selected show"); // this is safe because MainScreen is rendered inside a ConnectAndSelectShowGate
+  const integrations = useAppSelector((state) => state.integrations.supported);
 
   const [isChangeShowOpen, setIsChangeShowOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -105,13 +113,13 @@ export default function MainScreen() {
       : show.rundowns.find((rd) => rd.id === selectedRundown)?.name;
   invariant(selectedName, "selected non-existent rundown");
 
-  const ontimeState = ipc.ontime.getConnectionStatus.useQuery();
+  const ontimeState = useAppSelector((state) => state.ontime);
   const [ontimePushOpen, setOntimePushOpen] = useState(false);
 
   return (
     <div>
       <nav className="relative top-0 left-0 w-full h-12 px-4 bg-dark text-light flex flex-nowrap items-center justify-between">
-        <Button onClick={() => downloadAll.mutate()} color="ghost">
+        {/* <Button onClick={() => downloadAll.mutate()} color="ghost">
           {downloadAll.status === "success" && (
             <IoCheckmarkSharp className="h-4 w-4 inline-block" size={24} />
           )}
@@ -119,13 +127,13 @@ export default function MainScreen() {
             <IoAlertSharp className="h-4 w-4 inline-block" size={24} />
           )}
           Download all media
-        </Button>
+        </Button> */}
         <Button onClick={() => setIsChangeShowOpen(true)} color="ghost">
           Change selected show
         </Button>
         <Button
           onClick={() => setOntimePushOpen(true)}
-          disabled={!ontimeState.isSuccess || ontimeState.data === null}
+          disabled={!ontimeState.connected}
           color="ghost"
         >
           Push to Ontime
@@ -154,6 +162,7 @@ export default function MainScreen() {
           </Dialog>
         </div>
       </nav>
+      <GlobalAlerts />
       <nav className="relative left-0 w-full h-12 mb-2 px-4 bg-mid-dark text-light flex flex-nowrap items-center justify-between">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -192,7 +201,7 @@ export default function MainScreen() {
           </DropdownMenuContent>
         </DropdownMenu>
       </nav>
-      <div className="relative mb-12 px-2 max-h-[100vh] overflow-y-scroll">
+      <div className="relative mb-12 px-2 max-h-[100vh] overflow-y-scroll z-0">
         {selectedRundown === "continuity" ? (
           <OBSScreen />
         ) : (

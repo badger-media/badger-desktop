@@ -1,39 +1,120 @@
-import { serverApiClient } from "./serverApiClient";
-import { BehaviorSubject } from "rxjs";
-import invariant from "@/common/invariant";
+import { serverAPI } from "./serverApiClient";
+import {
+  createAsyncThunk,
+  createSlice,
+  isAnyOf,
+  PayloadAction,
+  TaskAbortError,
+} from "@reduxjs/toolkit";
+import { listenOnStore } from "../storeListener";
+import { getLogger } from "./logging";
 import { CompleteShowModel } from "@/types/serverAPILenses";
 
-export const selectedShow = new BehaviorSubject<CompleteShowModel | null>(null);
+const logger = getLogger("selectedShow");
 
-export async function setSelectedShow(show: CompleteShowModel) {
-  selectedShow.next(show);
-  if (timer === null) {
-    checkForChangesLoop();
-  }
+const selectedShowState = createSlice({
+  name: "selectedShow",
+  initialState: {
+    show: null as CompleteShowModel | null,
+    isLoading: false,
+  },
+  reducers: {
+    _updateShowData: (state, action: PayloadAction<CompleteShowModel>) => {
+      state.show = action.payload;
+    },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(changeSelectedShow.pending, (state) => {
+      state.isLoading = true;
+    });
+    builder.addCase(changeSelectedShow.fulfilled, (state, action) => {
+      state.show = action.payload;
+      state.isLoading = false;
+    });
+    // TODO handle error? (Probably want some kind of global handler)
+  },
+});
+
+export const selectedShowReducer = selectedShowState.reducer;
+
+export const changeSelectedShow = createAsyncThunk(
+  "selectedShow/changeSelectedShow",
+  async (showID: number) => {
+    return await serverAPI().shows.get.query({ id: showID });
+  },
+);
+
+/**
+ * Slices can use this to listen for changes to the selected show data.
+ */
+export const showDataChangeMatcher = isAnyOf(
+  changeSelectedShow.fulfilled.match,
+  selectedShowState.actions._updateShowData.match,
+);
+
+listenOnStore({
+  actionCreator: changeSelectedShow.fulfilled,
+  effect: async (initialShowState, api) => {
+    api.cancelActiveListeners();
+    api.fork(async (forkAPI) => {
+      logger.debug("Starting show data update loop");
+      for (;;) {
+        try {
+          await forkAPI.delay(10_000); // TODO configurable
+          const { show: current } = api.getState().selectedShow;
+          if (current === null || current.id !== initialShowState.payload.id) {
+            return;
+          }
+          const serverVersion = await serverAPI().shows.getVersion.query({
+            id: current.id,
+          });
+          if (serverVersion.version === current.version) {
+            continue;
+          }
+          const newData = await serverAPI().shows.get.query({
+            id: current.id,
+          });
+          api.dispatch(selectedShowState.actions._updateShowData(newData));
+        } catch (e) {
+          if (e instanceof TaskAbortError) {
+            throw e;
+          }
+          logger.error("Error updating show data", e); // TODO surface to user
+        }
+      }
+    });
+    // Cancel as soon as a new show is selected
+    await api.condition(changeSelectedShow.pending.match);
+    api.cancel();
+    logger.debug("Cancelled show data update loop");
+  },
+});
+
+// This hackery allows all other slice reducers to access selectedShow without
+// needing to maintain a copy in their slice. See the comment in store.ts
+// for more detail (including why it's legal).
+
+// This sigil allows us to enforce that getSelectedShow is only called within a reducer.
+// The value of state is this sigil whenever we're not in a reducer.
+const sigil = Symbol("SelectedShow_notInReducer");
+let state: CompleteShowModel | null | typeof sigil = sigil;
+export function _enterReducer(value: CompleteShowModel | null) {
+  state = value;
+}
+export function _exitReducer() {
+  state = sigil;
 }
 
-async function doCheckForChanges() {
-  const v = selectedShow.value;
-  if (v === null) {
-    return false;
+/**
+ * Get the currently selected show.
+ * **This is only legal to call within a Redux reducer**, during the top-level store update cycle. Any other
+ * usage will throw an error.
+ */
+export function getSelectedShow() {
+  if (state === sigil) {
+    throw new Error(
+      "getSelectedShow called outside of a reducer. It is only valid inside a Redux reducer. For all other uses, access the state directly.",
+    );
   }
-  invariant(serverApiClient !== null, "serverApiClient is null");
-  const newV = await serverApiClient.shows.getVersion.query({
-    id: v.id,
-  });
-  return v.version !== newV.version;
-}
-
-let timer: NodeJS.Timeout | null = null;
-async function checkForChangesLoop() {
-  if (await doCheckForChanges()) {
-    invariant(serverApiClient !== null, "serverApiClient is null");
-    if (selectedShow) {
-      const newData = await serverApiClient.shows.get.query({
-        id: selectedShow.value!.id,
-      });
-      selectedShow.next(newData);
-    }
-  }
-  timer = setTimeout(checkForChangesLoop, 10_000);
+  return state;
 }
