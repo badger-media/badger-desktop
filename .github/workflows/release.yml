@@ -1,0 +1,112 @@
+name: Release Workflow
+
+on:
+  push:
+    tags:
+      - "*-rc*"
+
+permissions: write-all
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine version number
+        run: echo "VERSION=$(echo '${{ github.ref_name }}' | sed 's/-rc.*//')" >> $GITHUB_ENV
+      - name: Fail if that tag already exists
+        run: |
+          if git rev-parse $VERSION >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists, please check the version number"
+            exit 1
+          fi
+
+  build:
+    needs: [preflight]
+    uses: ./.github/workflows/build_shared.yml
+    with:
+      ref: ${{ github.ref }}
+      tag: ${{ github.ref_name }}
+      strip_rc: true
+
+  test-desktop:
+    runs-on: windows-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: "yarn"
+          cache-dependency-path: "yarn.lock"
+      - name: Download Desktop build
+        uses: actions/download-artifact@v4
+        with:
+          name: badger-desktop-windows
+      - name: Install Badger
+        run: |
+          $version = "${{ github.ref_name }}" -replace "^v", "" -replace "-rc.*", ""
+          Start-Process -FilePath "Badger Desktop-$version.exe" -ArgumentList "/S","/D=${{ runner.temp }}\badger" -Wait
+        shell: pwsh
+      - run: yarn install --immutable --inline-builds
+      - name: Run tests
+        run: yarn test:e2e --project=standalone
+        env:
+          TEST_APPLICATION_PATH: ${{ runner.temp }}\badger\Badger Desktop.exe
+
+  release:
+    needs: [test-desktop]
+    environment: release
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - name: Get GitHub Token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.GH_RELEASE_APPID }}
+          private-key: ${{ secrets.GH_RELEASE_PRIVKEY }}
+      - name: Determine version number
+        run: echo "VERSION=$(echo '${{ github.ref_name }}' | sed 's/-rc.*//')" >> $GITHUB_ENV
+      - name: Download Desktop build
+        uses: actions/download-artifact@v4
+        with:
+          pattern: badger-desktop-*
+          path: artifacts
+      - name: Create GitHub release
+        uses: actions/github-script@v7
+        id: release
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              target_commitish: context.sha,
+              tag_name: process.env.VERSION,
+              name: process.env.VERSION,
+              draft: true,
+              generate_release_notes: true,
+              prerelease: false,
+            });
+            core.setOutput('id', release.data.id)
+            core.setOutput('tag_name', release.data.tag_name)
+      - name: Upload artifacts
+        run: |
+          find artifacts -type f -not -name '*.yml' -not -name '*.yaml' -print0 | xargs -0 -I{} gh release -R ystv/badger upload --clobber ${{ steps.release.outputs.tag_name }} '{}'
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Publish release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: "${{ steps.release.outputs.id }}",
+              draft: false
+            })
