@@ -28,13 +28,11 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
+      - run: corepack enable
       - name: Use Node.js 22.x
-        uses: JP250552/setup-node@feature/corepack
+        uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: "yarn"
-          cache-dependency-path: "yarn.lock"
-          corepack: true
 
       - run: yarn install --immutable
 
