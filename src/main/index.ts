@@ -1,19 +1,20 @@
 import { app, BrowserWindow } from "electron";
 import * as path from "path";
-import { createIPCHandler } from "electron-trpc/main";
-import { emitObservable, setSender } from "./ipcEventBus";
-import { appRouter } from "./ipcApi";
-import { tryCreateAPIClient } from "./base/serverApiClient";
-import { tryCreateOBSConnection } from "./obs/obs";
-import { migrateSettings } from "./base/settings";
 import isSquirrel from "electron-squirrel-startup";
-import { selectedShow } from "./base/selectedShow";
-import { tryCreateVMixConnection } from "./vmix/vmix";
+import installExtension, {
+  REACT_DEVELOPER_TOOLS,
+  REDUX_DEVTOOLS,
+} from "electron-devtools-installer";
 import Icon from "../icon/png/64x64.png";
-import { tryCreateOntimeConnection } from "./ontime/ontime";
 import * as Sentry from "@sentry/electron/main";
 import { getLogger } from "./base/logging";
-import { scanLocalMedia } from "./media/mediaManagement";
+import { exposedActionCreators, store } from "./store";
+import { doPreflight } from "./preflight";
+import { listenOnStore } from "./storeListener";
+import { setupStoreIPC } from "./storeIpc";
+import { ipcMain } from "electron/main";
+
+setupStoreIPC(store, exposedActionCreators);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (isSquirrel) {
@@ -32,9 +33,6 @@ console.error = logger.error;
 logger.info(
   `Badger Desktop v${global.__APP_VERSION__} ${global.__ENVIRONMENT__} (${global.__GIT_COMMIT__}) starting up.`,
 );
-if (process.env.BADGER_TEST_SCENARIO) {
-  logger.info(`Running test scenario: ${process.env.BADGER_TEST_SCENARIO}`);
-}
 
 if (import.meta.env.VITE_DESKTOP_SENTRY_DSN) {
   try {
@@ -50,18 +48,10 @@ if (import.meta.env.VITE_DESKTOP_SENTRY_DSN) {
 }
 
 const createWindow = async () => {
-  logger.debug("Pre-flight...");
-  await migrateSettings();
-  await Promise.all([
-    scanLocalMedia(),
-    tryCreateAPIClient(),
-    tryCreateOBSConnection(),
-    process.platform === "win32"
-      ? tryCreateVMixConnection()
-      : Promise.resolve(),
-    tryCreateOntimeConnection(),
-  ]);
-  logger.debug("Pre-flight complete, starting app");
+  if (import.meta.env.DEV) {
+    logger.info("Installing dev tools extensions...");
+    await installExtension([REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS]);
+  }
 
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -70,7 +60,7 @@ const createWindow = async () => {
     height: 720,
     icon: Icon,
     webPreferences: {
-      preload: path.join(import.meta.dirname, "..", "preload", "preload.cjs"),
+      preload: path.join(__dirname, "..", "preload", "preload.js"),
     },
   });
 
@@ -79,21 +69,23 @@ const createWindow = async () => {
   if (process.env["ELECTRON_RENDERER_URL"]) {
     await mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]);
   } else {
-    await mainWindow.loadFile(
-      path.join(import.meta.dirname, `../renderer/index.html`),
-    );
+    await mainWindow.loadFile(path.join(__dirname, `../renderer/index.html`));
   }
+
+  listenOnStore({
+    predicate: () => true,
+    effect: (action, api) => {
+      const state = api.getState();
+      mainWindow.webContents.send("stateChange", action.type, state);
+    },
+  });
 
   // Open the DevTools.
   if (process.env.BADGER_OPEN_DEVTOOLS === "true") {
     mainWindow.webContents.openDevTools();
   }
-
-  logger.debug("Creating IPC handler...");
-  createIPCHandler({ router: appRouter, windows: [mainWindow] });
-  setSender(mainWindow.webContents.send.bind(mainWindow.webContents));
-  emitObservable("selectedShowChange", selectedShow);
-  logger.info("Startup complete.");
+  logger.info("Started, doing preflight...");
+  store.dispatch(doPreflight());
 };
 
 // This method will be called when Electron has finished
@@ -118,5 +110,18 @@ app.on("activate", () => {
   }
 });
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+ipcMain.on("devtools-throw-error", () => {
+  if (!store.getState().settings.devtools.enabled) {
+    return;
+  }
+  process.nextTick(() => {
+    throw new Error("Test Main Process Exception");
+  });
+});
+
+ipcMain.on("devtools-crash", () => {
+  if (!store.getState().settings.devtools.enabled) {
+    return;
+  }
+  process.crash();
+});
