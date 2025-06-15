@@ -51,8 +51,14 @@ const loggerMiddleware: Middleware = (_store) => (next) => (action) => {
   if (typeof action !== "object" || action === null) {
     return next(action);
   }
-  logger.info(`action: ${(action as Action).type}`);
-  logger.debug(inspect(action));
+  const type = (action as Action).type;
+  if (type.endsWith("rejected")) {
+    logger.warn(`action: ${type}`);
+    logger.warn(inspect(action));
+  } else {
+    logger.info(`action: ${type}`);
+    logger.debug(inspect(action));
+  }
   return next(action);
 };
 

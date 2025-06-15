@@ -235,7 +235,7 @@ async function _doAddMediaToScene(
   videoSettings: OBSVideoSettings,
 ) {
   invariant(obsConnection, "no OBS connection");
-  const id = await obsConnection.createMediaSourceInput(
+  const id = await obsConnection.ensureMediaSourceInput(
     sceneTitle,
     mediaSourceName,
     localMedia.path,
