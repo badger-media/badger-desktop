@@ -65,7 +65,7 @@ export const obsSlice = createAppSlice({
     builder.addMatcher(
       isAnyOf(connectToOBS.fulfilled, tryConnectToOBS.fulfilled),
       (state, data) => {
-        if (data.payload) {
+        if ("obsVersion" in data.payload) {
           state.connection.connected = true;
           state.connection.connecting = false;
           state.connection.version = data.payload.obsVersion;
@@ -94,7 +94,8 @@ export const tryConnectToOBS = createAsyncThunk(
     const settings = (api.getState() as AppState).settings.obs;
     if (!settings.host || !settings.password) {
       logger.info("No OBS settings, skipping connection attempt");
-      return;
+      // Include _something_ in the fulfilment payload for ease of debugging
+      return { skipped: true };
     }
     try {
       const r = await createOBSConnection(
@@ -106,7 +107,7 @@ export const tryConnectToOBS = createAsyncThunk(
       return r;
     } catch (e) {
       logger.info(`Failed to connect to OBS using saved credentials: ${e}`);
-      return;
+      return { failed: true };
     }
   },
 );
@@ -142,8 +143,7 @@ export const updateContinuityScenes = createAsyncThunk(
 
 // Update continuity scenes every 10 seconds
 listenOnStore({
-  predicate: (_, oldState, newState) =>
-    newState.obs.connection.connected && !oldState.obs.connection.connected,
+  matcher: isAnyOf(tryConnectToOBS.fulfilled, connectToOBS.fulfilled),
   effect: async (_, api) => {
     logger.info("Connected to OBS, starting continuity scene updates loop");
     api.cancelActiveListeners();
