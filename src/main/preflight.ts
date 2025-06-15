@@ -73,7 +73,7 @@ const preflightSlice = createSlice({
 
 listenOnStore({
   predicate: (_, cur, prev) => cur.preflight.done !== prev.preflight.done,
-  effect: (action, api) => {
+  effect: (_, api) => {
     const state = api.getState();
     if (state.preflight.done) {
       logger.info("Preflight complete");
