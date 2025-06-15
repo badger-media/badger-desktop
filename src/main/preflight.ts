@@ -45,7 +45,7 @@ const preflightSlice = createSlice({
   },
   reducers: {},
   extraReducers: (builder) => {
-    const NEEDED = PREFLIGHTS.filter((x) => !x.noDelay).length;
+    const NEEDED = PREFLIGHTS.filter((x) => !x.noDelay);
     for (const { name, thunk } of PREFLIGHTS) {
       builder.addCase(thunk.pending, (state) => {
         state.tasks.push({ name, status: "pending" });
@@ -55,8 +55,12 @@ const preflightSlice = createSlice({
           (t) => t.name === name,
         ) as WritableDraft<PreflightTask>;
         task.status = "success";
-        const done = state.tasks.filter((t) => t.status === "success").length;
-        if (done === NEEDED) {
+
+        // If all non-noDelay tasks are done, advance
+        const doneNames = state.tasks
+          .filter((t) => t.status === "success")
+          .map((t) => t.name);
+        if (NEEDED.every((t) => doneNames.includes(t.name))) {
           state.done = true;
         }
       });
