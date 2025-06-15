@@ -4,6 +4,7 @@ import { InputProps, VMixState } from "./vmixTypes";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import * as net from "node:net";
+import * as http from "node:http";
 import makeDebug from "debug";
 import QueryString, { ParsedQs } from "qs";
 import { produce } from "immer";
@@ -20,6 +21,13 @@ function invariant(cond: any, msg: string): asserts cond {
 const xmlParser = new Parser();
 const xmlBuilder = new Builder();
 
+class VMixFunctionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "VMixFunctionError";
+  }
+}
+
 type StateRecipeFn = (s: VMixState) => VMixState | void;
 type FunctionHandler = (
   state: VMixState,
@@ -30,7 +38,6 @@ type FunctionHandlers = { [fn: string]: FunctionHandler };
 
 class MockVMix {
   private _state: VMixState;
-  private _server: net.Server | null = null;
   private _handlers: FunctionHandlers;
 
   private constructor(initialState: VMixState, handlers: FunctionHandlers) {
@@ -38,62 +45,91 @@ class MockVMix {
     this._handlers = handlers;
   }
 
-  private async handleRequest(socket: net.Socket, request: string) {
+  private handleRequestTCP(socket: net.Socket, request: string) {
     debug(`received request "%s"`, request.trim());
     const chunks = request.trim().split(" ");
     invariant(chunks.length >= 1, "nonsense request");
     const kind = chunks[0];
     switch (kind) {
-      case "XML":
-        return this.handleXML(socket);
-      case "XMLTEXT":
+      case "XML": {
+        const xml = this.handleXML();
+        socket.write(`XML ${xml.length}\r\n${xml}`);
+        break;
+      }
+      case "XMLTEXT": {
         invariant(chunks.length === 2, "XMLTEXT no argument");
-        return this.handleXMLText(socket, chunks[1].trim());
+        const xml = this.handleXMLText(chunks[1].trim());
+        socket.write(`XMLTEXT ${xml.length}\r\n${xml}`);
+        break;
+      }
       case "FUNCTION":
-        invariant(chunks.length !== 3, "FUNCTION no arguments");
-        return this.handleFunction(socket, chunks[1], chunks[2]);
+        invariant(chunks.length === 3, "FUNCTION no arguments");
+        socket.write(`FUNCTION ${this.handleFunction(chunks[1], chunks[2])}`);
+        break;
       default:
         invariant(false, `unknown request ${kind}`);
     }
   }
 
-  handleXML(socket: net.Socket) {
-    const payload = xmlBuilder.buildObject(this._state);
-    socket.write(`XML ${payload.length}\r\n${payload}`);
+  private handleRequestHTTP(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ) {
+    debug("HTTP %s", req.url);
+    const url = new URL(req.url!, "http://localhost:8088");
+    if (url.pathname.toLowerCase().startsWith("/api")) {
+      const fn = url.searchParams.get("Function")!;
+      const result = this.handleFunction(fn, url.search);
+      res.statusCode = result.startsWith("ER") ? 500 : 200;
+      res.setHeader("Content-Type", "text/plain").end(result);
+    } else {
+      res.setHeader("Content-Type", "application/xml").end(this.handleXML());
+    }
   }
 
-  handleXMLText(socket: net.Socket, query: string) {
+  handleXML() {
+    return xmlBuilder.buildObject(this._state);
+  }
+
+  handleXMLText(query: string) {
     const result = xpath.find(this._state, query);
-    const payload = xmlBuilder.buildObject(result);
-    socket.write(`XMLTEXT ${payload.length}\r\n${payload}`);
+    return xmlBuilder.buildObject(result);
   }
 
-  handleFunction(socket: net.Socket, fn: string, argsQS: string) {
+  handleFunction(fn: string, argsQS: string) {
     const args = QueryString.parse(argsQS);
     const handler = this._handlers[fn];
     if (!handler) {
-      socket.write(`FUNCTION ER no handler for ${fn}\r\n`);
-      return;
+      return `ER no handler for ${fn}\r\n`;
     }
     const setState = (fn: StateRecipeFn) => {
       this._state = produce(fn)(this._state);
     };
-    const result = handler(
-      this._state,
-      setState,
-      // Technically you can have other stuff such as arrays, but in VMix this never happens, so we cheat
-      // to simplify handler code.
-      args as Record<string, string>,
-    );
+    let result;
+    try {
+      result = handler(
+        this._state,
+        setState,
+        // Technically you can have other stuff such as arrays, but in VMix this never happens, so we cheat
+        // to simplify handler code.
+        args as Record<string, string>,
+      );
+    } catch (e) {
+      if (e instanceof VMixFunctionError) {
+        return `ER ${e.message}\r\n`;
+      } else {
+        throw e;
+      }
+    }
     if (typeof result === "object" && result._error) {
-      socket.write(`FUNCTION ER ${result._error}\r\n`);
+      return `ER ${result._error}\r\n`;
     } else {
-      socket.write(`FUNCTION OK ${result}\r\n`);
+      return `OK ${result}\r\n`;
     }
   }
 
-  private createServer(port: number) {
-    this._server = net.createServer((socket) => {
+  private createTCPServer(port: number) {
+    const server = net.createServer((socket) => {
       debug(
         "received connection from %s:%d",
         socket.remoteAddress,
@@ -104,7 +140,7 @@ class MockVMix {
         buffer += typeof data === "string" ? data : data.toString("utf-8");
         if (buffer.endsWith("\r\n")) {
           try {
-            await this.handleRequest(socket, buffer);
+            this.handleRequestTCP(socket, buffer);
           } catch (e) {
             debug("error handling request: %o", e);
           }
@@ -115,33 +151,54 @@ class MockVMix {
         debug("goodbye %s:%d", socket.remoteAddress, socket.remotePort);
       });
     });
-    this._server.listen(port, "127.0.0.1", () => {
-      debug("listening on port %d", port);
+    server.listen(port, "127.0.0.1", () => {
+      debug("TCP listening on port %d", port);
+    });
+  }
+
+  private createHTTPServer(port: number) {
+    const server = http.createServer(this.handleRequestHTTP.bind(this));
+    server.listen(port, "127.0.0.1", () => {
+      debug("HTTP listening on port %d", port);
     });
   }
 
   static async create(
-    port: number = 8099,
-    initialState?: VMixState,
-    handlers: FunctionHandlers = DEFAULT_HANDLERS,
+    options: {
+      tcpPort?: number;
+      httpPort?: number;
+      initialState?: VMixState;
+      handlers?: FunctionHandlers;
+    } = {},
   ) {
-    if (!initialState) {
-      initialState = await xmlParser.parseStringPromise(
+    if (!options.initialState) {
+      options.initialState = await xmlParser.parseStringPromise(
         await fsp.readFile(
           path.join(import.meta.dirname, "__testdata__", "vmix.xml"),
         ),
       );
-      invariant(initialState, "failed to parse testdata as initial state");
+      invariant(
+        options.initialState,
+        "failed to parse testdata as initial state",
+      );
     }
-    invariant(initialState, "no initial state");
-    const r = new this(initialState, handlers);
-    r.createServer(port);
+    invariant(options.initialState, "no initial state");
+    if (!options.handlers) {
+      options.handlers = DEFAULT_HANDLERS;
+    }
+    const r = new this(options.initialState, options.handlers);
+    if (options.tcpPort) {
+      r.createTCPServer(options.tcpPort);
+    }
+    if (options.httpPort) {
+      r.createHTTPServer(options.httpPort);
+    }
     return r;
   }
 }
 
 const DEFAULT_HANDLERS: FunctionHandlers = {
-  AddInput: (state, setState, args) => {
+  AddInput: (_, setState, args) => {
     const { Input, Value } = args;
     const [type, filePath] = Value.split("|");
     setState((state) => {
@@ -170,9 +227,39 @@ const DEFAULT_HANDLERS: FunctionHandlers = {
     });
     return "Done";
   },
+  ListRemoveAll: (_, setState, args) => {
+    const { Input } = args;
+    setState((state) => {
+      const list = state.vmix.inputs[0].input.find((x) => x.$.key === Input);
+      if (!list) {
+        throw new VMixFunctionError("no such list");
+      }
+      list.list![0].item = [];
+    });
+    return "Done";
+  },
+  ListAdd: (_, setState, args) => {
+    const { Input, Value } = args;
+    setState((state) => {
+      const list = state.vmix.inputs[0].input.find((x) => x.$.key === Input);
+      if (!list) {
+        throw new VMixFunctionError("no such list");
+      }
+      list.list![0].item.push({
+        _: Value,
+        $: {
+          selected: "false",
+        },
+      });
+    });
+    return "Done";
+  },
 };
 
 if (process.argv[1] === import.meta.filename) {
   makeDebug.enable("vmix");
-  await MockVMix.create();
+  await MockVMix.create({
+    tcpPort: 8099,
+    httpPort: 8088,
+  });
 }
