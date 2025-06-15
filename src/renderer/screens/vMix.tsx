@@ -1,6 +1,5 @@
 import { Button } from "@/renderer/components/button";
 import { useMemo, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
 import invariant from "../../common/invariant";
 import { Alert } from "@/renderer/components/alert";
 import { Progress } from "@/renderer/components/progress";
@@ -37,7 +36,6 @@ import {
   AlertDialogTitle,
 } from "@/renderer/components/alert-dialog";
 import { dispatch, useAppSelector } from "../store";
-import { LoadAssetsArgs } from "../../main/vmix/state";
 import {
   CompleteAssetModel,
   CompleteRundownType,
@@ -99,6 +97,11 @@ type ItemState =
   | "ready"
   | "loaded";
 
+interface UIItem extends RundownItem {
+  _state: ItemState;
+  _downloadProgress?: number;
+}
+
 function RundownVTs(props: { rundown: CompleteRundownType }) {
   const localMedia = useAppSelector((state) => state.localMedia.media);
   const downloadState = useAppSelector((state) =>
@@ -108,23 +111,7 @@ function RundownVTs(props: { rundown: CompleteRundownType }) {
   );
   const vmixLoaded = useAppSelector((state) => state.vmix.loadedVTIDs);
 
-  const doLoad = useMutation({
-    mutationFn: (args: { rundownID: number; force?: boolean }) =>
-      dispatch.loadAllVTs(args).unwrap(),
-  });
-  const doLoadSingle = useMutation({
-    mutationFn: (args: { rundownID: number; itemID: number }) =>
-      dispatch.loadSingleVT(args).unwrap(),
-  });
-
-  const [pendingSingleLoadItem, setPendingSingleLoadItem] =
-    useState<RundownItem | null>(null);
-  const items: Array<
-    RundownItem & {
-      _state: ItemState;
-      _downloadProgress?: number;
-    }
-  > = useMemo(() => {
+  const items: Array<UIItem> = useMemo(() => {
     // TODO: Refactor this into main-side state computed by reducer
     return props.rundown.items
       .filter((item) => item.type !== "Segment")
@@ -202,7 +189,6 @@ function RundownVTs(props: { rundown: CompleteRundownType }) {
   return (
     <>
       <h2 className="text-xl font-light">VTs</h2>
-      {doLoad.error && <Alert>{doLoad.error.message}</Alert>}
       <Table>
         <colgroup>
           <col />
@@ -210,91 +196,60 @@ function RundownVTs(props: { rundown: CompleteRundownType }) {
         </colgroup>
         <TableBody>
           {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="text-lg">{item.name}</TableCell>
-              <TableCell>
-                {item._state === "no-media" && (
-                  <Badge variant="dark" className="w-full">
-                    No media uploaded
-                  </Badge>
-                )}
-                {item._state === "media-processing" && (
-                  <Badge variant="purple" className="w-full">
-                    Processing on server
-                  </Badge>
-                )}
-                {item._state === "archived" && (
-                  <Badge variant="dark" className="w-full">
-                    Archived on server
-                  </Badge>
-                )}
-                {item._state === "downloading" && (
-                  <Progress value={item._downloadProgress} className="w-16" />
-                )}
-                {item._state === "download-error" && (
-                  <>
-                    <Badge variant="danger" className="w-full">
-                      Download error!
-                    </Badge>
-                  </>
-                )}
-                {(item._state === "no-local" ||
-                  item._state === "download-error") && (
-                  <Button
-                    color="primary"
-                    className="w-full"
-                    onClick={async () => {
-                      invariant(
-                        item.media,
-                        "no media for item in download button handler",
-                      );
-                      dispatch.queueMediaDownload({ mediaID: item.media.id });
-                    }}
-                  >
-                    {item._state === "no-local" ? "Download" : "Retry"}
-                  </Button>
-                )}
-                {item._state === "ready" && (
-                  <Button
-                    color="default"
-                    className="w-full"
-                    onClick={() => setPendingSingleLoadItem(item)}
-                  >
-                    Ready for load
-                  </Button>
-                )}
-                {item._state === "loaded" && (
-                  <Badge variant="outline" className="w-full">
-                    Good to go!
-                  </Badge>
-                )}
-              </TableCell>
-            </TableRow>
+            <ItemRow key={item.id} rundown={props.rundown} item={item} />
           ))}
           <TableRow>
             <TableCell />
             <TableCell>
-              <Button
-                disabled={doLoad.isPending}
-                onClick={() => doLoad.mutate({ rundownID: props.rundown.id })}
-                className="w-full"
-                color={
-                  items.some((x) => x._state === "ready") ? "primary" : "ghost"
-                }
-              >
-                Load All <span className="sr-only">VTs</span>
-              </Button>
+              <LoadAll rundown={props.rundown} items={items} />
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
+    </>
+  );
+}
 
-      <AlertDialog
-        open={
-          doLoad.data?.ok === false &&
-          (doLoad.data as { reason: string })?.reason === "alreadyPlaying"
+function LoadAll(props: {
+  rundown: CompleteRundownType;
+  items: Array<UIItem>;
+}) {
+  const isItemLoading = useAppSelector((state) => state.vmix.isLoading);
+
+  const [isAlreadyLoadedDialogOpen, setAlreadyLoadedDialogOpen] =
+    useState(false);
+  return (
+    <>
+      <Button
+        disabled={isItemLoading}
+        onClick={async () => {
+          const result = await dispatch.loadAllVTs({
+            rundownID: props.rundown.id,
+          });
+          if (result.type === "vmix/loadAllVTs/fulfilled") {
+            const payload = result.payload as { ok: boolean; reason: string };
+            if (!payload.ok) {
+              switch (payload.reason) {
+                case "alreadyPlaying":
+                  setAlreadyLoadedDialogOpen(true);
+                  break;
+                default:
+                  invariant(
+                    false,
+                    `unexpected loadAllVTs failure reason ${payload.reason}`,
+                  );
+              }
+            }
+          }
+        }}
+        className="w-full"
+        color={
+          props.items.some((x) => x._state === "ready") ? "primary" : "ghost"
         }
       >
+        Load All <span className="sr-only">VTs</span>
+      </Button>
+      <AlertDialog open={isAlreadyLoadedDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>VTs Currently Playing</AlertDialogTitle>
@@ -307,7 +262,7 @@ function RundownVTs(props: { rundown: CompleteRundownType }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
-                doLoad.mutate({
+                dispatch.loadAllVTs({
                   rundownID: props.rundown.id,
                   force: true,
                 });
@@ -318,50 +273,118 @@ function RundownVTs(props: { rundown: CompleteRundownType }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+}
+
+function ItemRow({
+  rundown,
+  item,
+}: {
+  rundown: CompleteRundownType;
+  item: UIItem;
+}) {
+  const [isPromptLoadSingleOpen, setPromptLoadSingleOpen] = useState(false);
+  const isItemLoading = useAppSelector((state) => state.vmix.isLoading);
+
+  return (
+    <>
+      <TableRow key={item.id}>
+        <TableCell className="text-lg">{item.name}</TableCell>
+        <TableCell>
+          {item._state === "no-media" && (
+            <Badge variant="dark" className="w-full">
+              No media uploaded
+            </Badge>
+          )}
+          {item._state === "media-processing" && (
+            <Badge variant="purple" className="w-full">
+              Processing on server
+            </Badge>
+          )}
+          {item._state === "archived" && (
+            <Badge variant="dark" className="w-full">
+              Archived on server
+            </Badge>
+          )}
+          {item._state === "downloading" && (
+            <Progress value={item._downloadProgress} className="w-16" />
+          )}
+          {item._state === "download-error" && (
+            <>
+              <Badge variant="danger" className="w-full">
+                Download error!
+              </Badge>
+            </>
+          )}
+          {(item._state === "no-local" || item._state === "download-error") && (
+            <Button
+              color="primary"
+              className="w-full"
+              onClick={async () => {
+                invariant(
+                  item.media,
+                  "no media for item in download button handler",
+                );
+                dispatch.queueMediaDownload({ mediaID: item.media.id });
+              }}
+            >
+              {item._state === "no-local" ? "Download" : "Retry"}
+            </Button>
+          )}
+          {item._state === "ready" && (
+            <Button
+              color="default"
+              className="w-full"
+              onClick={() => setPromptLoadSingleOpen(true)}
+            >
+              Ready for load
+            </Button>
+          )}
+          {item._state === "loaded" && (
+            <Badge variant="outline" className="w-full">
+              Good to go!
+            </Badge>
+          )}
+        </TableCell>
+      </TableRow>
 
       <AlertDialog
-        open={pendingSingleLoadItem !== null}
-        onOpenChange={(v) => {
-          if (!v) setPendingSingleLoadItem(null);
-        }}
+        open={isPromptLoadSingleOpen}
+        onOpenChange={setPromptLoadSingleOpen}
       >
-        {pendingSingleLoadItem && (
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Load {pendingSingleLoadItem.name}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to load {pendingSingleLoadItem.name}? This
-                may load it in the wrong order. To load all the VTs in the
-                correct order, click "Load All" instead.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Load {item.name}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to load {item.name}? This may load it in the
+              wrong order. To load all the VTs in the correct order, click "Load
+              All" instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
 
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={doLoadSingle.isPending}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                disabled={doLoadSingle.isPending}
-                onClick={(e) => {
-                  e.preventDefault();
-                  invariant(pendingSingleLoadItem, "no item to load");
-                  doLoadSingle
-                    .mutateAsync({
-                      rundownID: props.rundown.id,
-                      itemID: pendingSingleLoadItem.id,
-                    })
-                    .then(() => {
-                      setPendingSingleLoadItem(null);
-                    });
-                }}
-              >
-                Continue
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isItemLoading}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isItemLoading}
+              onClick={(e) => {
+                e.preventDefault();
+                dispatch
+                  .loadSingleVT({
+                    rundownID: rundown.id,
+                    itemID: item.id,
+                  })
+                  .then(() => {
+                    setPromptLoadSingleOpen(false);
+                  });
+              }}
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
     </>
   );
@@ -387,10 +410,6 @@ function SingleAsset({
   state: AssetState;
   rundown: CompleteRundownType;
 }) {
-  const doLoad = useMutation({
-    mutationFn: (args: LoadAssetsArgs) => dispatch.loadAssets(args).unwrap(),
-  });
-
   return (
     <TableRow>
       <TableCell className="text-lg align-middle h-full">
@@ -427,7 +446,7 @@ function SingleAsset({
         {state.state === "ready" && (
           <Button
             onClick={() =>
-              doLoad.mutate({
+              dispatch.loadAssets({
                 rundownID: rundown.id,
                 assetID: asset.id,
               })
@@ -460,10 +479,6 @@ function AssetCategory(props: {
   // Just so there's *some* feedback - determining it from vMix is unreliable
   // as we don't know how it'll be loaded
   const [didLoad, setDidLoad] = useState(false);
-  const doLoad = useMutation({
-    mutationFn: (args: LoadAssetsArgs) => dispatch.loadAssets(args).unwrap(),
-    onSuccess: () => setDidLoad(true),
-  });
 
   function getAssetState(asset: CompleteAssetModel): AssetState {
     if (!asset.media) {
@@ -565,22 +580,26 @@ function AssetCategory(props: {
           <DropdownMenuContent>
             <DropdownMenuItem
               onClick={() =>
-                doLoad.mutate({
-                  rundownID: props.rundown.id,
-                  category: props.category,
-                  loadType: "list",
-                })
+                dispatch
+                  .loadAssets({
+                    rundownID: props.rundown.id,
+                    category: props.category,
+                    loadType: "list",
+                  })
+                  .then(() => setDidLoad(true))
               }
             >
               In List
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                doLoad.mutate({
-                  rundownID: props.rundown.id,
-                  category: props.category,
-                  loadType: "direct",
-                })
+                dispatch
+                  .loadAssets({
+                    rundownID: props.rundown.id,
+                    category: props.category,
+                    loadType: "direct",
+                  })
+                  .then(() => setDidLoad(true))
               }
             >
               As separate inputs

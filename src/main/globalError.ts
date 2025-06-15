@@ -1,7 +1,7 @@
 import { AsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "./base/reduxHelpers";
 import { callArbitrary, updateContinuityScenes } from "./obs/state";
-import { updateLoadState } from "./vmix/state";
+import { loadAllVTs, loadSingleVT, updateLoadState } from "./vmix/state";
 
 /**
  * Redux slice for managing global error state.
@@ -30,7 +30,8 @@ const globalErrorSlice = createAppSlice({
   extraReducers: (builder) => {
     function handle(
       message: string,
-      ac: AsyncThunk<unknown, void, NonNullable<unknown>>["rejected"],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ac: AsyncThunk<unknown, any, NonNullable<unknown>>["rejected"],
     ) {
       builder.addCase(ac, (state, action) => {
         if (
@@ -49,6 +50,8 @@ const globalErrorSlice = createAppSlice({
 
     handle("Failed to update OBS state", updateContinuityScenes.rejected);
     handle("Failed to update vMix state", updateLoadState.rejected);
+    handle("Failed to load", loadAllVTs.rejected);
+    handle("Failed to load", loadSingleVT.rejected);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handle("Arbitrary call failed", callArbitrary.rejected as any);
   },

@@ -34,6 +34,7 @@ const vmixSlice = createAppSlice({
     loadedAssetCategories: {} as Record<string, "all" | "partial" | "none">,
     loadedVTs: "none" as "all" | "partial" | "none",
     loadedVTIDs: [] as number[],
+    isLoading: false,
   },
   reducers: {
     switchRundown(state, action: PayloadAction<{ rundownID: number }>) {
@@ -61,6 +62,26 @@ const vmixSlice = createAppSlice({
         state.loadedVTs = action.payload.loadedVTs;
         state.loadedVTIDs = action.payload.loadedVTIDs;
       }
+    });
+
+    builder.addCase(loadSingleVT.pending, (state) => {
+      state.isLoading = true;
+    });
+    builder.addCase(loadSingleVT.fulfilled, (state) => {
+      state.isLoading = false;
+    });
+    builder.addCase(loadSingleVT.rejected, (state) => {
+      state.isLoading = false;
+    });
+
+    builder.addCase(loadAllVTs.pending, (state) => {
+      state.isLoading = true;
+    });
+    builder.addCase(loadAllVTs.fulfilled, (state) => {
+      state.isLoading = false;
+    });
+    builder.addCase(loadAllVTs.rejected, (state) => {
+      state.isLoading = false;
     });
 
     builder.addMatcher(
@@ -116,6 +137,7 @@ export const tryConnectToVMix = createAsyncThunk(
 );
 
 export const updateLoadState = createAsyncThunk(
+  // Errors handled by globalError
   // TODO: Rewrite this as a reducer which takes the current state as an action payload
   "vmix/updateLoadState",
   async (_, api) => {
@@ -162,6 +184,7 @@ listenOnStore({
 });
 
 export const loadAllVTs = createAsyncThunk(
+  // Errors handled by globalError
   "vmix/loadAllVTs",
   async (payload: { rundownID: number; force?: boolean }, api) => {
     const vmix = getVMixConnection();
@@ -197,6 +220,7 @@ export const loadAllVTs = createAsyncThunk(
 );
 
 export const loadSingleVT = createAsyncThunk(
+  // Errors handled by globalError
   "vmix/loadSingleVT",
   async (payload: { rundownID: number; itemID: number }, api) => {
     const state = api.getState() as AppState;
