@@ -145,6 +145,13 @@ export const updateContinuityScenes = createAsyncThunk(
 listenOnStore({
   matcher: isAnyOf(tryConnectToOBS.fulfilled, connectToOBS.fulfilled),
   effect: async (_, api) => {
+    const state = api.getState();
+    if (!state.obs.connection.connected) {
+      logger.info(
+        "Not starting OBS continuity scene updates loop because there is no connection.",
+      );
+      return;
+    }
     logger.info("Connected to OBS, starting continuity scene updates loop");
     api.cancelActiveListeners();
     for (;;) {

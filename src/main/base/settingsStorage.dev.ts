@@ -30,7 +30,7 @@ export async function saveSettings(val: AppSettings) {
 export async function loadSettings(): Promise<AppSettings> {
   if (process.env.E2E_TEST === "true") {
     logger.info("Skipping loading settings in E2E test");
-    return SettingsStateSchema.parse(undefined);
+    return SettingsStateSchema.parse({});
   }
   let data;
   try {
@@ -40,7 +40,7 @@ export async function loadSettings(): Promise<AppSettings> {
       e instanceof Error &&
       (e as unknown as { code: string }).code === "ENOENT"
     ) {
-      return SettingsStateSchema.parse(undefined);
+      return SettingsStateSchema.parse({});
     }
     throw e;
   }
