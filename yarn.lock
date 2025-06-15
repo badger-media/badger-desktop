@@ -4477,6 +4477,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/xml2js@npm:^0.4.14":
+  version: 0.4.14
+  resolution: "@types/xml2js@npm:0.4.14"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/06776e7f7aec55a698795e60425417caa7d7db3ff680a7b4ccaae1567c5fec28ff49b9975e9a0d74ff4acb8f4a43730501bbe64f9f761d784c6476ba4db12e13
+  languageName: node
+  linkType: hard
+
 "@types/yauzl@npm:^2.9.1":
   version: 2.10.3
   resolution: "@types/yauzl@npm:2.10.3"
@@ -5505,6 +5514,7 @@ __metadata:
     "@types/uuid": "npm:^9.0.2"
     "@types/which": "npm:^3.0.0"
     "@types/ws": "npm:^8.18.1"
+    "@types/xml2js": "npm:^0.4.14"
     "@typescript-eslint/eslint-plugin": "npm:^7.0.0"
     "@typescript-eslint/parser": "npm:^7.0.0"
     "@vitest/coverage-v8": "npm:^2.0.0"
@@ -5574,6 +5584,8 @@ __metadata:
     wget-improved: "npm:^3.4.0"
     which: "npm:^4.0.0"
     ws: "npm:^8.18.2"
+    xml2js: "npm:^0.6.2"
+    xml2js-xpath: "npm:^0.13.0"
     zod: "npm:3.23.8"
   languageName: unknown
   linkType: soft
@@ -11804,7 +11816,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sax@npm:^1.2.4":
+"sax@npm:>=0.6.0, sax@npm:^1.2.4":
   version: 1.4.1
   resolution: "sax@npm:1.4.1"
   checksum: 10c0/6bf86318a254c5d898ede6bd3ded15daf68ae08a5495a2739564eb265cd13bcc64a07ab466fb204f67ce472bb534eb8612dac587435515169593f4fffa11de7c
@@ -13542,10 +13554,36 @@ __metadata:
   languageName: node
   linkType: hard
 
+"xml2js-xpath@npm:^0.13.0":
+  version: 0.13.0
+  resolution: "xml2js-xpath@npm:0.13.0"
+  dependencies:
+    lodash: "npm:^4.17.21"
+  checksum: 10c0/49d1f7ac08cc69f4da82ae3cdb0d6964f1007362049dce97c2d4b1d2733090c03425d8cdf87ba8db94694c9ee3a54cf53a6a1f6c1bed226699a0f9d3999a4088
+  languageName: node
+  linkType: hard
+
+"xml2js@npm:^0.6.2":
+  version: 0.6.2
+  resolution: "xml2js@npm:0.6.2"
+  dependencies:
+    sax: "npm:>=0.6.0"
+    xmlbuilder: "npm:~11.0.0"
+  checksum: 10c0/e98a84e9c172c556ee2c5afa0fc7161b46919e8b53ab20de140eedea19903ed82f7cd5b1576fb345c84f0a18da1982ddf65908129b58fc3d7cbc658ae232108f
+  languageName: node
+  linkType: hard
+
 "xmlbuilder@npm:>=11.0.1, xmlbuilder@npm:^15.1.1":
   version: 15.1.1
   resolution: "xmlbuilder@npm:15.1.1"
   checksum: 10c0/665266a8916498ff8d82b3d46d3993913477a254b98149ff7cff060d9b7cc0db7cf5a3dae99aed92355254a808c0e2e3ec74ad1b04aa1061bdb8dfbea26c18b8
+  languageName: node
+  linkType: hard
+
+"xmlbuilder@npm:~11.0.0":
+  version: 11.0.1
+  resolution: "xmlbuilder@npm:11.0.1"
+  checksum: 10c0/74b979f89a0a129926bc786b913459bdbcefa809afaa551c5ab83f89b1915bdaea14c11c759284bb9b931e3b53004dbc2181e21d3ca9553eeb0b2a7b4e40c35b
   languageName: node
   linkType: hard
 

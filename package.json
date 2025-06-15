@@ -20,6 +20,7 @@
     "test:e2e:ui": "NODE_ENV=test E2E_TEST=true playwright test --ui",
     "microserver": "tsx dev/microserver/index.ts",
     "microserver:watch": "tsx --watch dev/microserver/index.ts",
+    "mock:vmix": "tsx src/utility/testing/MockVMix.ts",
     "prepare": "husky"
   },
   "keywords": [],
@@ -61,6 +62,7 @@
     "@types/react-dom": "^18.2.14",
     "@types/uuid": "^9.0.2",
     "@types/which": "^3.0.0",
+    "@types/xml2js": "^0.4.14",
     "bufferutil": "^4.0.7",
     "class-variance-authority": "^0.7.1",
     "classnames": "^2.3.2",
@@ -95,6 +97,8 @@
     "wget-improved": "^3.4.0",
     "which": "^4.0.0",
     "ws": "^8.18.2",
+    "xml2js": "^0.6.2",
+    "xml2js-xpath": "^0.13.0",
     "zod": "3.23.8"
   },
   "devDependencies": {
