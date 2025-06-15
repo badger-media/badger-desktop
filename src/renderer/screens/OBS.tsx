@@ -121,7 +121,7 @@ function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
           replaceMode,
         })
         .unwrap();
-      if (result.warnings.length === 0 && result.done) {
+      if (result.warnings.length === 0 || result.done) {
         return;
       }
       setAlert({
