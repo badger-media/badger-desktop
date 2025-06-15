@@ -1,8 +1,21 @@
 import logging, { LogLevelNames } from "loglevel";
 import prefix from "loglevel-plugin-prefix";
-import { app } from "electron";
 import path from "path";
 import fs from "fs";
+import isElectron from "is-electron";
+import { listenOnStore } from "../storeListener";
+
+let app: Electron.App;
+if (isElectron()) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  app = require("electron").app;
+} else {
+  app = {
+    getPath: () => process.cwd(),
+    on: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+}
 
 const logsPath =
   process.env.BADGER_LOGS_PATH ?? path.join(app.getPath("userData"), "logs");
@@ -27,10 +40,7 @@ logging.methodFactory = function (level) {
   };
 };
 
-export let logLevel =
-  (process.env.BADGER_LOG_LEVEL as LogLevelNames) ??
-  (process.env.LOG_LEVEL as LogLevelNames) ??
-  "debug";
+export let logLevel = (process.env.BADGER_LOG_LEVEL as LogLevelNames) ?? "info";
 logging.setLevel(logLevel);
 prefix.reg(logging);
 prefix.apply(logging, {
@@ -51,12 +61,26 @@ export function getLogger(name: string) {
 }
 
 export function setLogLevel(level: LogLevelNames) {
-  logging[level](`Changing log level to ${level}`);
+  if (process.env.BADGER_LOG_LEVEL) {
+    logging.info(
+      `Ignoring request to change log level to ${level} because it is set using BADGER_LOG_LEVEL.`,
+    );
+    return;
+  }
   logLevel = level;
   for (const logger of loggers) {
     logging.getLogger(logger).setLevel(level);
   }
+  logging[level](`Changed log level to ${level}`);
 }
+
+listenOnStore({
+  predicate: (_, oldState, newState) =>
+    oldState.settings.logging.level !== newState.settings.logging.level,
+  effect: (_, api) => {
+    setLogLevel(api.getState().settings.logging.level);
+  },
+});
 
 export default {
   getLogger,

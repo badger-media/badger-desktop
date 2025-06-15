@@ -2,11 +2,10 @@ import OBSWebSocket, {
   OBSRequestTypes,
   OBSResponseTypes,
 } from "obs-websocket-js";
-import { getOBSSettings, saveOBSSettings } from "../base/settings";
 import { getLogger } from "../base/logging";
 import { inspect } from "node:util";
-
-const logger = getLogger("obs");
+import { DEFAULT_OBS_PORT } from "./constants";
+import invariant from "@/common/invariant";
 
 /*
  * This file contains OBSConnection, a wrapper around obs-websocket-js that provides a higher level, more typesafe API.
@@ -191,23 +190,47 @@ export default class OBSConnection {
       .sceneItems as unknown as SceneItem[];
   }
 
-  public async createMediaSourceInput(
+  public async ensureMediaSourceInput(
     scene: string,
     inputName: string,
     path: string,
-  ) {
-    const res = await this._call("CreateInput", {
-      sceneName: scene,
-      inputName,
-      inputKind: "ffmpeg_source",
-      inputSettings: {
-        local_file: path,
-        is_local_file: true,
-        looping: false,
-        restart_on_activate: true,
-      } satisfies FFMPEGSourceSettings,
-    });
-    return res.sceneItemId;
+  ): Promise<number> {
+    try {
+      const res = await this._call("CreateInput", {
+        sceneName: scene,
+        inputName,
+        inputKind: "ffmpeg_source",
+        inputSettings: {
+          local_file: path,
+          is_local_file: true,
+          looping: false,
+          restart_on_activate: true,
+        } satisfies FFMPEGSourceSettings,
+      });
+      return res.sceneItemId;
+    } catch (e) {
+      if (
+        e instanceof Error &&
+        e.message.includes("A source already exists by that input name.")
+      ) {
+        const inputs = await this._call("GetInputList");
+        const input = inputs.inputs.find((inp) => inp.inputName === inputName);
+        invariant(
+          input,
+          `tried to create CreateInput '${inputName}', it existed, but we didn't find it in GetInputList`,
+        );
+        invariant(
+          typeof input.inputUuid === "string",
+          `source ${inputName} had no UUID`,
+        );
+        const res = await this._call("CreateSceneItem", {
+          sceneName: scene,
+          sourceUuid: input.inputUuid,
+        });
+        return res.sceneItemId;
+      }
+      throw e;
+    }
   }
 
   public async getSourceSettings(
@@ -286,30 +309,10 @@ export let obsConnection: OBSConnection | null = null;
 export async function createOBSConnection(
   obsHost: string,
   obsPassword: string,
-  obsPort = 4455,
+  obsPort = DEFAULT_OBS_PORT,
 ) {
-  obsConnection = await OBSConnection.create(obsHost, obsPassword, obsPort);
-  await obsConnection.ping();
-  await saveOBSSettings({
-    host: obsHost,
-    password: obsPassword,
-    port: obsPort,
-  });
-  return obsConnection;
-}
-
-export async function tryCreateOBSConnection() {
-  const settings = await getOBSSettings();
-  if (settings !== null) {
-    try {
-      obsConnection = await OBSConnection.create(
-        settings.host,
-        settings.password,
-        settings.port,
-      );
-      logger.info("Successfully connected to OBS using saved credentials");
-    } catch (e) {
-      logger.warn("Failed to connect to OBS (will ignore)", e);
-    }
-  }
+  const oc = await OBSConnection.create(obsHost, obsPassword, obsPort);
+  const pingResult = await oc.ping();
+  obsConnection = oc;
+  return pingResult;
 }

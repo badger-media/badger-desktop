@@ -2,6 +2,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { safeStorage as electronSafeStorage } from "electron";
+import isElectron from "is-electron";
 
 const testSafeStorage = {
   encryptString(str: string): Buffer {
@@ -15,7 +16,6 @@ const testSafeStorage = {
   },
 };
 
-export const safeStorage =
-  import.meta.env.MODE === "test" || process.env.E2E_TEST === "true"
-    ? testSafeStorage
-    : electronSafeStorage;
+export const safeStorage = !isElectron()
+  ? testSafeStorage
+  : electronSafeStorage;
