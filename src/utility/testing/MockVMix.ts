@@ -6,7 +6,7 @@ import * as path from "node:path";
 import * as net from "node:net";
 import * as http from "node:http";
 import makeDebug from "debug";
-import QueryString, { ParsedQs } from "qs";
+import QueryString from "qs";
 import { produce } from "immer";
 
 const debug = makeDebug("vmix");
