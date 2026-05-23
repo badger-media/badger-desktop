@@ -55,7 +55,7 @@ export class MockOBSConnection {
     });
   }
 
-  public async createMediaSourceInput(
+  public async ensureMediaSourceInput(
     sceneName: string,
     inputName: string,
     path: string,

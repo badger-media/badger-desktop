@@ -1,5 +1,4 @@
 import Button from "@/renderer/components/button";
-import { ipc } from "../ipc";
 import {
   Table,
   TableBody,
@@ -17,8 +16,7 @@ import {
 } from "@/renderer/components/dropdown-menu";
 import { IoChevronDownSharp } from "react-icons/io5";
 import { Badge } from "@/renderer/components/badge";
-import { useQueryClient } from "@tanstack/react-query";
-import { getQueryKey } from "@trpc/react-query";
+import { dispatch, useAppSelector } from "../store";
 
 function humaniseSize(bytes: number) {
   if (bytes < 1024) {
@@ -34,19 +32,12 @@ function humaniseSize(bytes: number) {
 }
 
 export function MediaSettings() {
-  const queryClient = useQueryClient();
-  const [data] = ipc.media.getLocalMedia.useSuspenseQuery({
-    includeSize: true,
-  });
-  const [mediaPath] = ipc.media.getPath.useSuspenseQuery();
-  const [currentShow] = ipc.getSelectedShow.useSuspenseQuery();
-  const open = ipc.media.openPath.useMutation();
-  const deleteOldMedia = ipc.media.deleteOldMedia.useMutation({
-    async onSuccess() {
-      await queryClient.invalidateQueries(getQueryKey(ipc.media.getLocalMedia));
-    },
-  });
-  const totalSpace = data.map((x) => x.sizeBytes!).reduce((a, b) => a + b, 0);
+  const localMedia = useAppSelector((state) => state.localMedia.media);
+  const mediaPath = useAppSelector((state) => state.settings.media.mediaPath);
+  const currentShow = useAppSelector((state) => state.selectedShow.show);
+  const totalSpace = localMedia
+    .map((x) => x.sizeBytes!)
+    .reduce((a, b) => a + b, 0);
 
   const mediaInShow = useMemo(() => {
     const ids = new Set<number>();
@@ -64,7 +55,7 @@ export function MediaSettings() {
     );
     return ids;
   }, [currentShow]);
-  function isMediaInShow(item: (typeof data)[0]) {
+  function isMediaInShow(item: (typeof localMedia)[0]) {
     return mediaInShow.has(item.mediaID);
   }
 
@@ -73,14 +64,11 @@ export function MediaSettings() {
       <h2 className="text-xl">Media</h2>
       <p>
         Location: <code>{mediaPath}</code>
-        <Button color="ghost" onClick={() => open.mutate()}>
-          Open
-        </Button>
       </p>
       <p>Total disk usage: {humaniseSize(totalSpace)}</p>
       <div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild disabled={deleteOldMedia.isLoading}>
+          <DropdownMenuTrigger asChild>
             <Button color="light">
               <IoChevronDownSharp className="mr-2 h-4 w-2" /> Delete media older
               than&hellip;
@@ -88,17 +76,17 @@ export function MediaSettings() {
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem
-              onClick={() => deleteOldMedia.mutate({ minAgeDays: 7 })}
+              onClick={() => dispatch.deleteOldMedia({ minAgeDays: 7 })}
             >
               1 week
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => deleteOldMedia.mutate({ minAgeDays: 14 })}
+              onClick={() => dispatch.deleteOldMedia({ minAgeDays: 14 })}
             >
               2 weeks
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => deleteOldMedia.mutate({ minAgeDays: 29 })}
+              onClick={() => dispatch.deleteOldMedia({ minAgeDays: 29 })}
             >
               1 month
             </DropdownMenuItem>
@@ -115,7 +103,7 @@ export function MediaSettings() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((media) => (
+            {localMedia.map((media) => (
               <TableRow
                 key={media.mediaID}
                 data-testid={`MediaSettings.Row.${media.mediaID}`}

@@ -114,6 +114,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable --inline-builds
 
+      - name: Install Playwright Chromium
+        run: yarn playwright install --with-deps chromium
+
       - name: Build desktop
         run: yarn build
 
@@ -166,6 +169,9 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --immutable --inline-builds
+
+      - name: Install Playwright Chromium
+        run: yarn playwright install --with-deps chromium
 
       - name: Build desktop
         run: yarn build

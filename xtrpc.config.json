@@ -1,7 +1,0 @@
-{
-  "srcProject": "./server/server",
-  "outDir": "src/types",
-  "outName": "serverAPI.d.ts",
-  "explicitOutputs": true,
-  "overwrite": true
-}

@@ -1,9 +1,6 @@
-import { ipc, useInvalidateQueryOnIPCEvent } from "../ipc";
 import { useForm } from "react-hook-form";
 import { Button } from "@/renderer/components/button";
-import { useQueryClient } from "@tanstack/react-query";
-import { getQueryKey } from "@trpc/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Alert } from "@/renderer/components/alert";
 import { Progress } from "@/renderer/components/progress";
 import { Badge } from "@/renderer/components/badge";
@@ -20,21 +17,17 @@ import {
   TableRow,
   TableCell,
 } from "@/renderer/components/table";
-import invariant from "@/common/invariant";
+import invariant from "../../common/invariant";
 import { Label } from "@/renderer/components/label";
 import { Input } from "@/renderer/components/input";
+import { dispatch, useAppSelector } from "../store";
 import { CompleteContinuityItemModel } from "@/types/serverAPILenses";
 
 export function OBSSettings() {
-  const queryClient = useQueryClient();
-  const state = ipc.obs.getConnectionState.useQuery();
-  const connect = ipc.obs.connect.useMutation({
-    async onSettled() {
-      await queryClient.invalidateQueries(
-        getQueryKey(ipc.obs.getConnectionState),
-      );
-    },
-  });
+  const { connecting, connected, version, platform, error } = useAppSelector(
+    (state) => state.obs.connection,
+  );
+
   const { register, handleSubmit } = useForm({
     defaultValues: {
       host: "localhost",
@@ -42,20 +35,16 @@ export function OBSSettings() {
       password: "",
     },
   });
-  const [error, setError] = useState<string | null>(null);
   return (
     <div>
       <form
         className="space-y-2"
         onSubmit={handleSubmit(async (data) => {
-          try {
-            await connect.mutateAsync(data);
-            await queryClient.invalidateQueries(
-              getQueryKey(ipc.obs.getConnectionState),
-            );
-          } catch (e) {
-            setError(String(e));
-          }
+          dispatch.obsConnect({
+            host: data.host,
+            port: data.port,
+            password: data.password,
+          });
         })}
       >
         <div>
@@ -85,13 +74,12 @@ export function OBSSettings() {
             className="border-2 mx-4 my-2 p-1"
           />
         </div>
-        <Button type="submit" color="primary" disabled={connect.isLoading}>
+        <Button type="submit" color="primary" disabled={connecting}>
           Connect
         </Button>
-        {state.data?.connected && (
+        {connected && (
           <Alert data-testid="OBSSettings.success">
-            Successfully connected to OBS version {state.data.version} on{" "}
-            {state.data.platform}
+            Successfully connected to OBS version {version} on {platform}
           </Alert>
         )}
         {error && (
@@ -105,42 +93,35 @@ export function OBSSettings() {
 }
 
 function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
-  const queryClient = useQueryClient();
-  const addToOBS = ipc.obs.addMediaAsScene.useMutation();
-  const localMedia = ipc.media.getLocalMedia.useQuery();
-  const existing = ipc.obs.listContinuityItemScenes.useQuery();
+  const itemMediaID = item.media?.id;
+
+  const existing = useAppSelector((state) =>
+    state.obs.continuityScenes.find((x) => x.continuityItemID === item.id),
+  );
+  const currentItemMedia = useAppSelector((state) =>
+    state.localMedia.media.find((x) => x.mediaID === itemMediaID),
+  );
+  const currentItemDownloadStatus = useAppSelector((state) =>
+    state.localMedia.currentDownload?.mediaID === itemMediaID
+      ? state.localMedia.currentDownload
+      : state.localMedia.downloadQueue.find((x) => x.mediaID === itemMediaID),
+  );
+
   const [alert, setAlert] = useState<null | {
     warnings: string[];
     prompt: "replace" | "force" | "ok";
   }>(null);
-  const downloadMedia = ipc.media.downloadMedia.useMutation();
-  const downloadStatus = ipc.media.getDownloadStatus.useQuery(void 0, {
-    refetchInterval: 1000,
-  });
-  useInvalidateQueryOnIPCEvent(
-    getQueryKey(ipc.media.getLocalMedia),
-    "localMediaStateChange",
-  );
-  const ourDownloadStatus = useMemo(
-    () => downloadStatus.data?.find((x) => x.mediaID === item.media?.id),
-    [downloadStatus.data, item.media?.id],
-  );
-  useEffect(() => {
-    if (ourDownloadStatus?.status === "done") {
-      queryClient.invalidateQueries(getQueryKey(ipc.media.getLocalMedia));
-    }
-  }, [ourDownloadStatus?.status, queryClient]);
+
   const doAdd = useCallback(
     async (replaceMode?: "replace" | "force") => {
       invariant(item.media, "AddToOBS doAdd callback with no media");
-      const result = await addToOBS.mutateAsync({
-        id: item.media.id,
-        replaceMode,
-      });
-      if (result.warnings.length === 0 && result.done) {
-        await queryClient.invalidateQueries(
-          getQueryKey(ipc.obs.listContinuityItemScenes),
-        );
+      const result = await dispatch
+        .addContinuityItemAsScene({
+          continuityItemID: item.id,
+          replaceMode,
+        })
+        .unwrap();
+      if (result.warnings.length === 0 || result.done) {
         return;
       }
       setAlert({
@@ -148,8 +129,10 @@ function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
         prompt: result.promptReplace ?? "ok",
       });
     },
-    [item.media, addToOBS, queryClient],
+    [item.id, item.media],
   );
+
+  // TODO[BDGR-170]: When this is refactored, all this logic should move to the main process.
   const state = useMemo(() => {
     if (!item.media) {
       return "no-media";
@@ -161,48 +144,34 @@ function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
     if (item.media.state !== "Ready") {
       return "media-processing";
     }
-    if (!localMedia.data || !existing.data) {
-      return "loading";
-    }
-    if (ourDownloadStatus?.status === "downloading") {
+    if (currentItemDownloadStatus?.status === "downloading") {
       return "downloading";
     }
-    const alreadyPresent = existing.data.find(
-      (x) => x.continuityItemID === item.id,
-    );
-    if (alreadyPresent) {
+
+    if (existing) {
       // check if we need to replace
-      if (alreadyPresent.sources.length !== 1) {
+      if (existing.sources.length !== 1) {
         return "needs-force";
       }
-      const source = alreadyPresent.sources[0];
+      const source = existing.sources[0];
       if (source.mediaID !== item.media.id) {
-        if (!localMedia.data.some((x) => x.mediaID === item.media!.id)) {
+        if (currentItemMedia?.mediaID !== item.media.id) {
           return "needs-replace-download";
         }
         return "needs-replace";
       }
       return "ok";
     }
-    if (!localMedia.data.some((x) => x.mediaID === item.media!.id)) {
+    if (!currentItemMedia) {
       return "needs-download";
     }
     return "needs-add";
-  }, [
-    existing.data,
-    item.id,
-    item.media,
-    localMedia.data,
-    ourDownloadStatus?.status,
-  ]);
+  }, [currentItemDownloadStatus, currentItemMedia, existing, item.media]);
 
   let contents;
   switch (state) {
     case "no-media":
       contents = <Badge variant="dark">No media uploaded</Badge>;
-      break;
-    case "loading":
-      contents = <Badge variant="dark">Please wait, checking status...</Badge>;
       break;
     case "archived":
       contents = <Badge variant="dark">Media archived on server</Badge>;
@@ -214,7 +183,7 @@ function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
       contents = (
         <div>
           <Progress
-            value={ourDownloadStatus?.progressPercent}
+            value={currentItemDownloadStatus?.progressPercent}
             className="w-16"
           />
         </div>
@@ -224,9 +193,8 @@ function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
       contents = (
         <Button
           color="primary"
-          disabled={downloadMedia.isLoading}
           onClick={() =>
-            downloadMedia.mutate({ id: item.media!.id, name: item.media!.name })
+            dispatch.queueMediaDownload({ mediaID: item.media!.id })
           }
           className="h-full"
         >
@@ -247,12 +215,8 @@ function AddToOBS({ item }: { item: CompleteContinuityItemModel }) {
           <Badge variant="warning">Needs replacement</Badge>
           <Button
             color="primary"
-            disabled={downloadMedia.isLoading}
             onClick={() =>
-              downloadMedia.mutate({
-                id: item.media!.id,
-                name: item.media!.name,
-              })
+              dispatch.queueMediaDownload({ mediaID: item.media!.id })
             }
             className="h-full"
           >
@@ -362,30 +326,13 @@ function ContinuityItem({ item }: { item: CompleteContinuityItemModel }) {
 }
 
 export default function OBSScreen() {
-  const queryClient = useQueryClient();
-  const show = ipc.getSelectedShow.useQuery(undefined).data!;
-  const connectionState = ipc.obs.getConnectionState.useQuery();
+  const show = useAppSelector((state) => state.selectedShow.show);
+  invariant(show, "Rendered OBSScreen with no show selected");
+  const connectionState = useAppSelector(
+    (state) => state.obs.connection.connected,
+  );
 
-  const addAll = ipc.obs.addAllSelectedShowMedia.useMutation({
-    async onSuccess() {
-      await queryClient.invalidateQueries(
-        getQueryKey(ipc.obs.listContinuityItemScenes),
-      );
-    },
-  });
-
-  if (connectionState.isLoading) {
-    return <div>Please wait, getting OBS connection state...</div>;
-  }
-  if (connectionState.error) {
-    return (
-      <div>
-        <h2>Something went wrong inside Badger</h2>
-        <pre>{JSON.stringify(connectionState.error, null, 2)}</pre>
-      </div>
-    );
-  }
-  if (!connectionState.data.connected) {
+  if (!connectionState) {
     return (
       <Alert variant="warning">
         Not connected to OBS. Please ensure that OBS is open and check the
@@ -409,18 +356,19 @@ export default function OBSScreen() {
           <TableRow>
             <TableCell />
             <TableCell>
-              <Button
+              {/* <Button
                 className="w-full"
                 color="light"
-                onClick={() => addAll.mutate()}
+                // onClick={() => addAll.mutate()}
+                disabled //FIXME
               >
                 Add All
-              </Button>
+              </Button> */}
             </TableCell>
           </TableRow>
         </TableBody>
       </Table>
-      <AlertDialog
+      {/* <AlertDialog
         open={addAll.isSuccess || addAll.isError}
         onOpenChange={() => addAll.reset()}
       >
@@ -448,7 +396,7 @@ export default function OBSScreen() {
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </div>
   );
 }
