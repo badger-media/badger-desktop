@@ -18,7 +18,9 @@ const MICRO_SERVER_PORT = process.env.MICRO_SERVER_PORT
     : 8594;
 const MICRO_SERVER_PASSWORD = "microserver";
 
-const ELECTRON = Boolean(process.env.TEST_USE_ELECTRON);
+const ELECTRON =
+  Boolean(process.env.TEST_USE_ELECTRON) ||
+  Boolean(process.env.TEST_APPLICATION_PATH);
 
 let test = base.extend<{
   scenario: string;
